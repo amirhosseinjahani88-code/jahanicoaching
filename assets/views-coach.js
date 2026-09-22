@@ -18,7 +18,7 @@ const CoachViews = (() => {
             <h1 class="title-xl">سلام مربی ${UI.escapeHtml(SJ.raw.coach.firstName)} ${UI.escapeHtml(SJ.raw.coach.lastName)}</h1>
             <p class="muted">${pro ? "کاکپیت مستری پرو" : "داشبورد پلن اسنشیال"} • ${UI.escapeHtml(SJ.raw.coach.pool)}</p>
           </div>
-          <div class="card-gradient stack" style="gap:.2rem;min-width:240px">
+          <div class="card-gradient stack plan-chip">
             <span style="opacity:.85">اشتراک فعال</span>
             <strong class="title-md">${pro ? PLANS.pro.title : PLANS.essential.title}</strong>
             <span style="opacity:.85">${pro ? PLANS.pro.priceLabel : PLANS.essential.priceLabel}</span>
@@ -245,9 +245,9 @@ const CoachViews = (() => {
           "رکوردها، ریت دست، حضور و وضعیت مالی در یک نما.",
           "#/app"
         )}
-        <div class="card row" style="gap:.75rem">
-          <input id="student-search" placeholder="جستجوی نام شاگرد" value="${UI.escapeHtml(query)}" style="flex:1;min-width:200px" />
-          <select id="student-group" style="max-width:200px">
+        <div class="card filters-bar">
+          <input id="student-search" placeholder="جستجوی نام شاگرد" value="${UI.escapeHtml(query)}" />
+          <select id="student-group">
             ${["همه", ...AGE_GROUPS]
               .map((g) => `<option ${g === groupFilter ? "selected" : ""}>${g}</option>`)
               .join("")}
@@ -578,8 +578,8 @@ const CoachViews = (() => {
         ${UI.sectionTitle("آنالیز بیومکانیک، ریت دست و امتیاز FINA", "سنجش عددی جای حس و گمان؛ خروجی قابل نمایش به اولیا.", "#/app")}
 
         <section class="card stack">
-          <div class="row">
-            <label class="field" style="flex:1">
+          <div class="form-grid">
+            <label class="field">
               <span>شاگرد</span>
               <select id="bio-student">
                 ${SJ.students()

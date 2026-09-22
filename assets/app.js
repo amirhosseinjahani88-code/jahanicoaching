@@ -227,6 +227,17 @@ const APP = (() => {
 APP.action("go", (data) => UI.navigate(data.hash));
 APP.action("modal:close", () => UI.closeModal());
 
+APP.action("nav:toggle", (_data, trigger) => {
+  const bar = document.querySelector(".topbar");
+  if (!bar) return;
+  const open = bar.classList.toggle("nav-open");
+  if (trigger) {
+    trigger.setAttribute("aria-expanded", open ? "true" : "false");
+    trigger.textContent = open ? "✕" : "☰";
+    trigger.setAttribute("aria-label", open ? "بستن منو" : "باز کردن منو");
+  }
+});
+
 APP.action("auth:logout", () => {
   SJ.logout();
   UI.toast("از حساب خارج شدید.");

@@ -107,7 +107,7 @@ const UI = (() => {
     const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
     const area = `${path} L${points[points.length - 1].x.toFixed(1)},${height - padY} L${points[0].x.toFixed(1)},${height - padY} Z`;
     return `
-      <svg class="chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="نمودار روند">
+      <svg class="chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="نمودار روند">
         <defs>
           <linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stop-color="#0a84ff" stop-opacity="0.28" />
@@ -141,7 +141,7 @@ const UI = (() => {
     const maxValue = Math.max(...series.flatMap((s) => s.values), 1);
     const barW = Math.min(18, slot / (series.length + 1));
     return `
-      <svg class="chart" style="height:${height}px" viewBox="0 0 ${width} ${height}" role="img" aria-label="نمودار میله‌ای">
+      <svg class="chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="نمودار میله‌ای">
         <line x1="${padX}" y1="${height - padY}" x2="${width - padX}" y2="${height - padY}" stroke="#e2e8f0" />
         ${labels
           .map((label, i) => {
@@ -203,15 +203,16 @@ const UI = (() => {
             <span class="brand-mark">🏊</span>
             <span>شنا جهانی</span>
           </button>
-          <nav class="nav">
+          <nav class="nav" aria-label="صفحات مربی">
             ${COACH_NAV.map(
               (item) => `<button data-action="go" data-hash="${item.hash}" ${activeHash === item.hash ? 'aria-current="page"' : ""}>${item.label}${item.pro && !SJ.isPro() ? " 🔒" : ""}</button>`
             ).join("")}
           </nav>
-          <div class="row">
+          <div class="topbar-actions">
             ${planBadge}
             <button class="btn-quiet" data-action="auth:logout">خروج</button>
           </div>
+          <button class="nav-toggle" data-action="nav:toggle" aria-expanded="false" aria-label="باز کردن منو">☰</button>
         </div>
       </header>
       <main class="page">${content}</main>`;

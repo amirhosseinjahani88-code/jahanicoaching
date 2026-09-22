@@ -5,7 +5,8 @@
 # این سرور فقط روی localhost گوش می‌دهد، پس از اینترنت قابل دسترسی نیست و کلید شما جای دیگری نمی‌رود.
 
 param(
-  [int]$Port = 8777
+  [int]$Port = 8777,
+  [switch]$NoBrowser
 )
 
 $ErrorActionPreference = "Stop"
@@ -95,11 +96,19 @@ $listener = [System.Net.HttpListener]::new()
 $listener.Prefixes.Add($prefix)
 $listener.Start()
 
-Write-Host "Swim Jahani روی $prefix اجرا شد. برای توقف Ctrl+C بزنید."
+Write-Host ""
+Write-Host "  Swim Jahani روی $prefix اجرا شد."
+Write-Host "  برای خاموش کردن، این پنجره را ببندید یا Ctrl+C بزنید."
+Write-Host ""
 if ($apiKey) {
   Write-Host "هوش مصنوعی واقعی فعال است (مدل $model). کلید فقط روی همین دستگاه است." -ForegroundColor Green
 } else {
   Write-Host "کلید پیدا نشد؛ برنامه با موتور محلی کار می‌کند. کلید را در ai-key.local.txt بگذارید." -ForegroundColor Yellow
+}
+
+# مرورگر را خودکار روی همان آدرس باز می‌کند تا دنبال آدرس نگردید.
+if (-not $NoBrowser) {
+  Start-Process $prefix | Out-Null
 }
 
 try {

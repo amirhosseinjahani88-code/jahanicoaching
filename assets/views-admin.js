@@ -12,16 +12,19 @@ const AdminViews = (() => {
         <div class="topbar-inner">
           <div class="brand" style="color:#fff">
             <span class="brand-mark" style="background:#fff;color:#0b192c">⚙️</span>
-            <span>پنل مستر کنترل</span>
+            <span>مستر کنترل</span>
           </div>
-          <nav class="nav nav-dark">
+          <nav class="nav nav-dark" aria-label="صفحات مدیریت">
             ${tabs
               .map(
                 (t) => `<button data-action="go" data-hash="${t.hash}" ${active === t.hash ? 'aria-current="page"' : ""}>${t.label}</button>`
               )
               .join("")}
           </nav>
-          <button class="btn-quiet" style="color:#cbd5e1" data-action="auth:logout">خروج</button>
+          <div class="topbar-actions">
+            <button class="btn-quiet" style="color:#cbd5e1" data-action="auth:logout">خروج</button>
+          </div>
+          <button class="nav-toggle nav-toggle-dark" data-action="nav:toggle" aria-expanded="false" aria-label="باز کردن منو">☰</button>
         </div>
       </header>
       <main class="page">${content}</main>`;

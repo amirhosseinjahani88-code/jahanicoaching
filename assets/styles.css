@@ -24,6 +24,9 @@ html,
 body {
   margin: 0;
   padding: 0;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -52,6 +55,10 @@ button {
   border: 0;
   border-radius: 999px;
   padding: 0.85rem 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
@@ -65,6 +72,7 @@ textarea {
   font-family: inherit;
   font-size: 1rem;
   width: 100%;
+  max-width: 100%;
   padding: 0.8rem 1rem;
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -84,7 +92,7 @@ textarea:focus {
 .page {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 2rem 1.25rem 4rem;
+  padding: 2rem max(1.25rem, env(safe-area-inset-left)) calc(4rem + env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-right));
 }
 
 .dark-page {
@@ -118,7 +126,14 @@ textarea:focus {
 .grid {
   display: grid;
   gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+}
+
+.grid > *,
+.hero > *,
+.two-col > *,
+.auth-layout > * {
+  min-width: 0;
 }
 
 .space-between {
@@ -318,11 +333,35 @@ textarea:focus {
 .topbar-inner {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 0.85rem 1.25rem;
+  padding: max(0.85rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right)) 0.85rem max(1.25rem, env(safe-area-inset-left));
   display: flex;
   align-items: center;
   gap: 1rem;
   justify-content: space-between;
+}
+
+.topbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.nav-toggle {
+  display: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 12px;
+  background: #eaf1fb;
+  color: var(--navy);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.nav-toggle-dark {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 
 .brand {
@@ -493,9 +532,10 @@ textarea:focus {
 }
 
 .workout-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) auto;
+  align-items: center;
+  gap: 0.75rem 1rem;
   padding: 0.6rem 0.9rem;
   border-radius: 12px;
   background: #f8fafc;
@@ -515,7 +555,10 @@ textarea:focus {
 
 .chart {
   width: 100%;
-  height: 220px;
+  height: auto;
+  max-width: 100%;
+  display: block;
+  aspect-ratio: 640 / 240;
 }
 
 .field {
@@ -547,17 +590,18 @@ textarea:focus {
 
 .toast {
   position: fixed;
-  inset-inline: 0;
-  bottom: 1.25rem;
+  inset-inline: max(0.75rem, env(safe-area-inset-left)) max(0.75rem, env(safe-area-inset-right));
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
   margin: 0 auto;
   width: max-content;
-  max-width: 90vw;
+  max-width: min(90vw, 36rem);
   background: var(--navy);
   color: var(--white);
   padding: 0.75rem 1.4rem;
   border-radius: 999px;
   box-shadow: var(--shadow-md);
   z-index: 50;
+  text-align: center;
 }
 
 .divider {
@@ -577,6 +621,57 @@ textarea:focus {
   gap: 2rem;
   grid-template-columns: 1.1fr 0.9fr;
   align-items: start;
+}
+
+.hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.hero-cta {
+  width: 100%;
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plan-chip {
+  gap: 0.2rem;
+  min-width: min(240px, 100%);
+  flex: 0 1 240px;
+}
+
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.filters-bar input {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.filters-bar select {
+  flex: 0 1 180px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  align-items: end;
+  width: 100%;
 }
 
 .two-col {
@@ -602,9 +697,9 @@ textarea:focus {
 }
 
 .demo-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: minmax(5rem, 8rem) minmax(0, 1fr);
+  gap: 0.4rem 1rem;
   font-size: 0.93rem;
   color: #e2e8f0;
   padding: 0.35rem 0;
@@ -728,7 +823,7 @@ textarea:focus {
 .manual-form {
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
   align-items: end;
 }
 
@@ -836,7 +931,7 @@ textarea:focus {
   background: rgba(11, 25, 44, 0.55);
   display: grid;
   place-items: center;
-  padding: 1.25rem;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   z-index: 60;
 }
 
@@ -845,11 +940,80 @@ textarea:focus {
   border-radius: 20px;
   padding: 1.5rem;
   width: min(640px, 100%);
-  max-height: 85vh;
+  max-height: min(85vh, calc(100dvh - 2rem));
   overflow: auto;
   display: grid;
   gap: 1rem;
   box-shadow: var(--shadow-md);
+}
+
+.toggle-group {
+  flex-wrap: wrap;
+}
+
+/* ---------- واکنش‌گرا ---------- */
+
+@media (max-width: 1024px) {
+  .nav {
+    gap: 0.1rem;
+  }
+
+  .nav button {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.92rem;
+  }
+}
+
+@media (max-width: 1080px) {
+  .topbar-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "brand actions toggle"
+      "nav nav nav";
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+  }
+
+  .brand {
+    grid-area: brand;
+    justify-self: start;
+    min-width: 0;
+  }
+
+  .topbar-actions {
+    grid-area: actions;
+    margin: 0;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+    grid-area: toggle;
+  }
+
+  .nav {
+    display: none;
+    grid-area: nav;
+    width: 100%;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0.2rem;
+    padding: 0.2rem 0 0.35rem;
+  }
+
+  .nav button {
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+  }
+
+  .topbar.nav-open .nav {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 @media (max-width: 900px) {
@@ -857,18 +1021,165 @@ textarea:focus {
   .two-col,
   .auth-layout {
     grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .workout-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .workout-row > span:nth-child(2) {
+    grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 640px) {
+  body {
+    font-size: 15px;
+  }
+
+  .page {
+    padding: 1.15rem max(0.9rem, env(safe-area-inset-left)) calc(3.25rem + env(safe-area-inset-bottom)) max(0.9rem, env(safe-area-inset-right));
+  }
+
   .card,
   .card-glass,
   .card-gradient,
   .card-link {
-    padding: 1.15rem;
+    padding: 1.05rem;
+  }
+
+  .title-xl {
+    font-size: clamp(1.4rem, 7.2vw, 2rem);
+  }
+
+  .title-lg {
+    font-size: clamp(1.2rem, 5.5vw, 1.6rem);
+  }
+
+  .stat {
+    font-size: 1.55rem;
+  }
+
+  .site-header-actions,
+  .hero-cta,
+  .row.hero-cta {
+    width: 100%;
+  }
+
+  .site-header-actions > button {
+    flex: 1 1 auto;
+  }
+
+  .hero-cta > button {
+    flex: 1 1 100%;
+  }
+
+  .hero-metrics {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .demo-row {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+
+  .demo-row > span:first-child {
+    font-weight: 700;
+    color: #67e8f9;
+  }
+
+  .tabs {
+    width: 100%;
+    border-radius: 16px;
+  }
+
+  .tabs button {
+    flex: 1 1 auto;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.88rem;
   }
 
   .roster-item {
     flex-wrap: wrap;
   }
+
+  .toggle-group {
+    width: 100%;
+  }
+
+  .toggle-group button {
+    flex: 1;
+  }
+
+  .student-row {
+    gap: 0.65rem;
+  }
+
+  .student-metric {
+    min-width: 0;
+    flex: 1 1 30%;
+  }
+
+  .coach-row > span:first-child {
+    min-width: 0;
+  }
+
+  .insight {
+    align-items: flex-start;
+  }
+
+  .plan-chip {
+    flex: 1 1 100%;
+  }
+
+  .auth-layout {
+    gap: 1.25rem;
+  }
+
+  button:not(.btn-quiet):not(.nav button):not(.tabs button):not(.brand):not(.nav-toggle):not(.toggle-group button):not(.student-row) {
+    min-height: 44px;
+  }
 }
+
+@media (max-width: 420px) {
+  .badge {
+    font-size: 0.82rem;
+    padding: 0.28rem 0.7rem;
+  }
+
+  .toast {
+    border-radius: 16px;
+    width: auto;
+  }
+}
+
+@media (pointer: coarse) {
+  .nav button,
+  .tabs button,
+  .toggle-group button {
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 1081px) {
+  .nav-toggle {
+    display: none !important;
+  }
+
+  .nav {
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .nav button {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.92rem;
+  }
+
+  .topbar.nav-open .nav {
+    display: flex;
+  }
+}
+

@@ -8,12 +8,12 @@ const PublicViews = (() => {
     return UI.publicShell(`
       <div class="dark-page">
         <div class="page stack-lg">
-          <header class="space-between">
+          <header class="site-header">
             <div class="brand" style="color:#fff">
               <span class="brand-mark">🏊</span>
               <span>شنا جهانی</span>
             </div>
-            <div class="row">
+            <div class="row site-header-actions">
               <button class="btn-ghost btn-sm" data-action="go" data-hash="#/pricing">تعرفه‌ها</button>
               <button class="btn-white btn-sm" data-action="go" data-hash="#/auth">ورود / ثبت‌نام مربیان</button>
             </div>
@@ -30,11 +30,11 @@ const PublicViews = (() => {
                 ${PLATFORM.tagline}. از تمرین‌نویسی با ویس تا آنالیز عددی بیومکانیک و شفافیت مالی با اولیا —
                 زمان اداری مربی ۸۰ درصد کم می‌شود و حفظ شناگر درآمد او را تا ۴۰ درصد بالا می‌برد.
               </p>
-              <div class="row">
+              <div class="row hero-cta">
                 <button class="btn-primary" data-action="go" data-hash="#/auth">شروع رایگان دمو</button>
                 <button class="btn-ghost" data-action="go" data-hash="#/pricing">مشاهده پلن‌ها و تعرفه‌ها</button>
               </div>
-              <div class="row" style="gap:2rem;margin-top:.5rem">
+              <div class="hero-metrics">
                 ${IMPACT_METRICS.map(
                   (m) => `<div><div class="title-lg" style="color:#67e8f9">${m.value}</div><div class="on-dark-muted">${m.label}</div></div>`
                 ).join("")}
