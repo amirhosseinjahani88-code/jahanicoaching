@@ -1,9 +1,13 @@
-# کلیدهای محلی ورکر — هرگز نباید کامیت شوند
+# کلید هوش مصنوعی — فقط روی همین دستگاه، هرگز نباید کامیت شود
+ai-key.local.txt
 .dev.vars
 worker/.dev.vars
 *.env
 .env
 .env.*
+
+serve.log
+serve.err.log
 
 node_modules/
 worker/node_modules/
