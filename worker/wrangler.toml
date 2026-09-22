@@ -1,0 +1,10 @@
+name = "swim-jahani-ai"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# متغیرهای غیرمحرمانه. کلید API اینجا نوشته نمی‌شود!
+# کلید را با این دستور ست کنید:  npx wrangler secret put AVALAI_API_KEY
+[vars]
+AI_MODEL = "gemini-2.5-flash"
+AVALAI_BASE_URL = "https://api.avalai.ir/v1"
+ALLOWED_ORIGINS = "https://amirhosseinjahani88-code.github.io,http://localhost:8777"

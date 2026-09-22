@@ -44,7 +44,7 @@ const PublicViews = (() => {
             <div class="card-glass stack" id="demo-box">
               <div class="space-between">
                 <h2 class="title-md" style="color:#fff">دموی تعاملی — بدون ثبت‌نام</h2>
-                <span class="badge badge-cyan">Mock AI</span>
+                <span class="badge badge-cyan">${AIRemote.isEnabled() ? "AI واقعی" : "Mock AI"}</span>
               </div>
               <p class="on-dark-muted">یک جمله بگویید، جلسه ساختاریافته بگیرید.</p>
               <label class="field">
@@ -52,8 +52,10 @@ const PublicViews = (() => {
                 <textarea id="demo-brief" rows="3" placeholder="مثلاً: برای نوجوانان رقابتی یک جلسه ۷۵ دقیقه‌ای کرال سینه با تمرکز روی سرعت بنویس">${UI.escapeHtml(APP.demoBrief || AI.voice.samples[0])}</textarea>
               </label>
               <div class="row">
-                <button class="btn-primary" data-action="demo:generate">تولید جلسه با AI</button>
-                <button class="btn-ghost btn-sm" data-action="demo:sample">یک نمونه دیگر</button>
+                <button class="btn-primary" data-action="demo:generate" ${APP.ui.aiBusy ? "disabled" : ""}>
+                  ${APP.ui.aiBusy ? "در حال ساخت جلسه…" : "تولید جلسه با AI"}
+                </button>
+                <button class="btn-ghost btn-sm" data-action="demo:sample" ${APP.ui.aiBusy ? "disabled" : ""}>یک نمونه دیگر</button>
               </div>
               ${
                 demo

@@ -399,9 +399,11 @@ const CoachViews = (() => {
             <textarea id="ai-brief" rows="3" placeholder="${UI.escapeHtml(AI.voice.samples[0])}">${UI.escapeHtml(APP.ui.brief || "")}</textarea>
           </label>
           <div class="row">
-            <button class="btn-primary" data-action="workout:generate">تولید جلسه با AI</button>
-            <button class="btn-white" data-action="workout:voice">🎙️ ضبط ویس</button>
-            <button class="btn-quiet" data-action="workout:sample">نمونه درخواست</button>
+            <button class="btn-primary" data-action="workout:generate" ${APP.ui.aiBusy ? "disabled" : ""}>
+              ${APP.ui.aiBusy ? "در حال ساخت جلسه…" : "تولید جلسه با AI"}
+            </button>
+            <button class="btn-white" data-action="workout:voice" ${APP.ui.aiBusy ? "disabled" : ""}>🎙️ ضبط ویس</button>
+            <button class="btn-quiet" data-action="workout:sample" ${APP.ui.aiBusy ? "disabled" : ""}>نمونه درخواست</button>
           </div>
           <p class="muted" style="font-size:.9rem">${AI.voice.available() ? "میکروفون مرورگر فعال است؛ فارسی صحبت کنید." : "مرورگر شما تبدیل گفتار به متن ندارد؛ با زدن دکمه ویس، یک نمونه شبیه‌سازی می‌شود."}</p>
         </section>
@@ -435,7 +437,12 @@ const CoachViews = (() => {
       <section class="card stack review-gate">
         <div class="space-between">
           <h2 class="title-md">دروازه بازبینی AI</h2>
-          <span class="badge badge-warn">پیش‌نویس — نیاز به تأیید مربی</span>
+          <span class="row" style="gap:.4rem">
+            <span class="badge badge-light">${
+              workout.engine === "ai" ? `مدل ${UI.escapeHtml(workout.model || "AI")}` : "موتور محلی"
+            }</span>
+            <span class="badge badge-warn">پیش‌نویس — نیاز به تأیید مربی</span>
+          </span>
         </div>
         <div class="grid">
           ${UI.kpi("متراژ کل", `${UI.fa(workout.meters)} متر`, `${UI.fa(workout.laps)} طول استخر ${UI.fa(workout.poolLength)} متری`)}

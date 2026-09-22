@@ -1,0 +1,10 @@
+# کلیدهای محلی ورکر — هرگز نباید کامیت شوند
+.dev.vars
+worker/.dev.vars
+*.env
+.env
+.env.*
+
+node_modules/
+worker/node_modules/
+worker/.wrangler/

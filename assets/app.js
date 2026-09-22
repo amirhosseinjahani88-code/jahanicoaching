@@ -7,6 +7,7 @@ const APP = (() => {
     brief: "",
     draftPreview: null,
     manual: { title: "جلسه دستی امروز", sets: [] },
+    aiBusy: false,
     studentQuery: "",
     studentGroup: "همه",
     biomechStudent: null,
@@ -265,18 +266,30 @@ APP.action("demo:reset", () => {
 
 /* ---------- دموی لندینگ ---------- */
 
-APP.action("demo:generate", () => {
+APP.action("demo:generate", async () => {
   const brief = APP.value("demo-brief", APP.demoBrief);
   APP.demoBrief = brief;
-  APP.demoWorkout = AI.generateWorkout(AI.parseBrief(brief));
+  APP.ui.aiBusy = true;
   APP.render();
+
+  APP.demoWorkout = await AIRemote.generateWorkout(brief);
+  APP.ui.aiBusy = false;
+  APP.render();
+
+  if (APP.demoWorkout.fallbackReason) {
+    UI.toast("سرویس AI در دسترس نبود؛ خروجی با موتور محلی ساخته شد.");
+  }
 });
 
-APP.action("demo:sample", () => {
+APP.action("demo:sample", async () => {
   const list = AI.voice.samples;
   const next = list[(list.indexOf(APP.demoBrief) + 1 + list.length) % list.length];
   APP.demoBrief = next;
-  APP.demoWorkout = AI.generateWorkout(AI.parseBrief(next));
+  APP.ui.aiBusy = true;
+  APP.render();
+
+  APP.demoWorkout = await AIRemote.generateWorkout(next);
+  APP.ui.aiBusy = false;
   APP.render();
 });
 
@@ -338,24 +351,42 @@ APP.action("workout:sample", () => {
   APP.render();
 });
 
-APP.action("workout:generate", () => {
+APP.action("workout:generate", async () => {
   const brief = APP.value("ai-brief", APP.ui.brief);
   if (!brief.trim()) {
     UI.toast("توضیح جلسه را بنویسید یا ویس بگیرید.");
     return;
   }
   APP.ui.brief = brief;
-  APP.ui.draftPreview = { ...AI.generateWorkout(AI.parseBrief(brief)), source: "ai-text" };
-  UI.toast("جلسه ساخته شد؛ در دروازه بازبینی تأیید کنید.");
+  APP.ui.aiBusy = true;
+  APP.ui.draftPreview = null;
   APP.render();
+
+  const workout = await AIRemote.generateWorkout(brief);
+  APP.ui.aiBusy = false;
+  APP.ui.draftPreview = { ...workout, source: "ai-text" };
+  APP.render();
+
+  UI.toast(
+    workout.fallbackReason
+      ? "سرویس AI در دسترس نبود؛ جلسه با موتور محلی ساخته شد."
+      : "جلسه ساخته شد؛ در دروازه بازبینی تأیید کنید."
+  );
 });
 
 APP.action("workout:voice", () => {
-  const finish = (transcript, simulated) => {
+  const finish = async (transcript, simulated) => {
     APP.ui.brief = transcript;
-    APP.ui.draftPreview = { ...AI.generateWorkout(AI.parseBrief(transcript)), source: "ai-voice" };
-    UI.toast(simulated ? "ویس نمونه پردازش شد." : "ویس شما به جلسه تبدیل شد.");
+    APP.ui.aiBusy = true;
+    APP.ui.draftPreview = null;
     APP.render();
+
+    const workout = await AIRemote.generateWorkout(transcript);
+    APP.ui.aiBusy = false;
+    APP.ui.draftPreview = { ...workout, source: "ai-voice" };
+    APP.render();
+
+    UI.toast(simulated ? "ویس نمونه پردازش شد." : "ویس شما به جلسه تبدیل شد.");
   };
 
   if (!AI.voice.available()) {
