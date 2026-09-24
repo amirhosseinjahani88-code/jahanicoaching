@@ -178,6 +178,7 @@ const UI = (() => {
     { hash: "#/app", label: "کاکپیت", pro: false },
     { hash: "#/app/attendance", label: "حضور و غیاب", pro: false },
     { hash: "#/app/students", label: "شاگردان", pro: false },
+    { hash: "#/app/sessions", label: "جلسات", pro: false },
     { hash: "#/app/workout", label: "تمرین‌نویسی", pro: false },
     { hash: "#/app/biomech", label: "آنالیز بیومکانیک", pro: true },
     { hash: "#/app/finance", label: "دستیار مالی", pro: true },
@@ -247,13 +248,15 @@ const UI = (() => {
       </div>`;
   }
 
-  function kpi(label, value, hint, tone = "") {
-    return `
-      <div class="card kpi ${tone}">
+  function kpi(label, value, hint, tone = "", hash = "") {
+    const inner = `
         <span class="muted">${label}</span>
         <strong class="stat num">${value}</strong>
-        ${hint ? `<span class="muted" style="font-size:.92rem">${hint}</span>` : ""}
-      </div>`;
+        ${hint ? `<span class="muted" style="font-size:.92rem">${hint}</span>` : ""}`;
+    if (hash) {
+      return `<button class="card kpi kpi-link ${tone}" data-action="go" data-hash="${hash}">${inner}</button>`;
+    }
+    return `<div class="card kpi ${tone}">${inner}</div>`;
   }
 
   function navigate(hash) {

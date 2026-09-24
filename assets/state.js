@@ -81,7 +81,7 @@ const SJ = (() => {
       attendance: seedAttendance(),
       payments: seedPayments(),
       biomech: seedBiomech(),
-      workouts: [],
+      workouts: SAMPLE_WORKOUTS.map((w, i) => ({ ...w, id: i + 1 })),
       vaultModules: VAULT_MODULES.map((m) => ({ ...m, lessons: [...m.lessons] })),
       ownedVault: ["bio", "dryland", "nutrition", "rate"],
       viewedStudent: null,
@@ -96,6 +96,9 @@ const SJ = (() => {
       if (!raw) return freshState();
       const parsed = JSON.parse(raw);
       if (parsed.version !== 1) return freshState();
+      if (!Array.isArray(parsed.workouts) || parsed.workouts.length === 0) {
+        parsed.workouts = SAMPLE_WORKOUTS.map((w, i) => ({ ...w, id: i + 1 }));
+      }
       return parsed;
     } catch (err) {
       return freshState();
@@ -249,8 +252,9 @@ const SJ = (() => {
     save();
   }
 
-  function todayCounts() {
-    const marks = todaySheet().marks;
+  function countsFor(date) {
+    const sheet = state.attendance[date];
+    const marks = (sheet && sheet.marks) || {};
     let present = 0;
     let absent = 0;
     let late = 0;
@@ -259,7 +263,21 @@ const SJ = (() => {
       else if (v === "absent") absent += 1;
       else if (v === "late") late += 1;
     });
-    return { present, absent, late, marked: present + absent + late, total: STUDENTS.length };
+    return { present, absent, late, marked: present + absent + late, total: STUDENTS.length, notes: (sheet && sheet.notes) || "" };
+  }
+
+  function todayCounts() {
+    return countsFor(TODAY_KEY);
+  }
+
+  function sessionHistory() {
+    return SESSION_DATES.slice()
+      .reverse()
+      .map((date) => {
+        const counts = countsFor(date);
+        const related = state.workouts.filter((w) => w.createdAt === date);
+        return { date, counts, workouts: related, isToday: date === TODAY_KEY };
+      });
   }
 
   function studentAttendance(studentId) {
@@ -421,6 +439,7 @@ const SJ = (() => {
     setAttendanceNotes,
     setAttendanceAnalysis,
     todayCounts,
+    sessionHistory,
     studentAttendance,
     attendanceRate,
     payments,

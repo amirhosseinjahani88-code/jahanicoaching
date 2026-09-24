@@ -18,31 +18,35 @@ const CoachViews = (() => {
             <h1 class="title-xl">سلام مربی ${UI.escapeHtml(SJ.raw.coach.firstName)} ${UI.escapeHtml(SJ.raw.coach.lastName)}</h1>
             <p class="muted">${pro ? "کاکپیت مستری پرو" : "داشبورد پلن اسنشیال"} • ${UI.escapeHtml(SJ.raw.coach.pool)}</p>
           </div>
-          <div class="card-gradient stack plan-chip">
+          <button class="card-gradient stack plan-chip" data-action="go" data-hash="#/app/profile">
             <span style="opacity:.85">اشتراک فعال</span>
             <strong class="title-md">${pro ? PLANS.pro.title : PLANS.essential.title}</strong>
             <span style="opacity:.85">${pro ? PLANS.pro.priceLabel : PLANS.essential.priceLabel}</span>
-          </div>
+          </button>
         </div>
 
         <div class="grid">
-          ${UI.kpi("شاگردان فعال", `${UI.fa(SJ.students().length)} شناگر`, "پرونده کامل و فعال")}
+          ${UI.kpi("شاگردان فعال", `${UI.fa(SJ.students().length)} شناگر`, "ورود به پرونده شاگردان", "", "#/app/students")}
           ${UI.kpi(
             "حضور و غیاب امروز",
             counts.marked ? `${UI.fa(counts.present)} حاضر، ${UI.fa(counts.absent)} غایب` : "ثبت نشده",
             counts.marked ? `${UI.fa(counts.marked)} از ${UI.fa(counts.total)} ثبت شده` : "برای شروع کلیک کنید",
-            counts.marked ? "" : "kpi-warn"
+            counts.marked ? "" : "kpi-warn",
+            "#/app/attendance"
           )}
           ${UI.kpi(
             "وصول شهریه این ماه",
             UI.millions(finance.collected),
             `${UI.fa(finance.debtors)} شاگرد بدهکار`,
-            finance.debtors ? "kpi-warn" : ""
+            finance.debtors ? "kpi-warn" : "",
+            pro ? "#/app/finance" : "#/pricing"
           )}
           ${UI.kpi(
-            "جلسه امروز",
-            published ? `${UI.fa(published.meters)} متر` : "منتشر نشده",
-            published ? UI.escapeHtml(published.title) : "با AI یا دستی بسازید"
+            "جلسات",
+            `${UI.fa(SJ.workouts().length)} جلسه`,
+            published ? UI.escapeHtml(published.title) : "مشاهده جلسات گذشته",
+            "",
+            "#/app/sessions"
           )}
         </div>
 
@@ -75,6 +79,10 @@ const CoachViews = (() => {
             <button class="card-link" data-action="go" data-hash="#/app/students">
               <strong class="title-md">پرونده شاگردان</strong>
               <span class="muted">رکورد، ریت، حضور و وضعیت مالی</span>
+            </button>
+            <button class="card-link" data-action="go" data-hash="#/app/sessions">
+              <strong class="title-md">جلسات گذشته</strong>
+              <span class="muted">تمرین‌های منتشرشده و حضور هر روز</span>
             </button>
             <button class="card-link" data-action="go" data-hash="${pro ? "#/app/biomech" : "#/pricing"}">
               <strong class="title-md">آنالیز بیومکانیک ${pro ? "" : "🔒"}</strong>
@@ -226,13 +234,15 @@ const CoachViews = (() => {
         return `
         <button class="student-row" data-action="go" data-hash="#/app/student/${s.id}">
           <span class="avatar">${UI.escapeHtml(UI.initials(s.name))}</span>
-          <span class="stack" style="gap:.15rem;flex:1;text-align:right">
+          <span class="student-identity">
             <strong>${UI.escapeHtml(s.name)}</strong>
-            <span class="muted" style="font-size:.88rem">${UI.escapeHtml(s.group)} • ${UI.escapeHtml(s.level)} • ${UI.escapeHtml(s.stroke)}</span>
+            <span class="muted">${UI.escapeHtml(s.group)} • ${UI.escapeHtml(s.level)} • ${UI.escapeHtml(s.stroke)}</span>
           </span>
-          <span class="student-metric"><span class="muted">رکورد</span><strong class="num">${UI.secs(best)}</strong></span>
-          <span class="student-metric"><span class="muted">FINA</span><strong class="num">${points ? UI.fa(points) : "—"}</strong></span>
-          <span class="student-metric"><span class="muted">حضور</span><strong class="num">${UI.fa(rate)}٪</strong></span>
+          <span class="student-metrics">
+            <span class="student-metric"><span class="muted">رکورد</span><strong class="num">${UI.secs(best)}</strong></span>
+            <span class="student-metric"><span class="muted">FINA</span><strong class="num">${points ? UI.fa(points) : "—"}</strong></span>
+            <span class="student-metric"><span class="muted">حضور</span><strong class="num">${UI.fa(rate)}٪</strong></span>
+          </span>
           <span class="badge ${balance.due === 0 ? "badge-ok" : "badge-warn"}">${balance.due === 0 ? "تسویه" : UI.millions(balance.due)}</span>
         </button>`;
       })
@@ -555,6 +565,88 @@ const CoachViews = (() => {
       </div>`;
   }
 
+  /* ---------- جلسات گذشته ---------- */
+
+  function sessionsPage() {
+    const history = SJ.sessionHistory();
+    const totalWorkouts = SJ.workouts().length;
+    const publishedCount = SJ.workouts().filter((w) => w.status === "published").length;
+
+    const cards = history
+      .map((day) => {
+        const c = day.counts;
+        const statusLabel = day.isToday
+          ? c.marked
+            ? "امروز — در حال ثبت"
+            : "امروز — هنوز ثبت نشده"
+          : "برگزار شده";
+        return `
+        <section class="card stack session-card ${day.isToday ? "session-card-today" : ""}">
+          <div class="space-between">
+            <div class="stack" style="gap:.2rem">
+              <strong>${UI.escapeHtml(day.date)}</strong>
+              <span class="muted" style="font-size:.9rem">${statusLabel}</span>
+            </div>
+            <span class="badge ${day.isToday ? "badge-blue" : "badge-ok"}">${day.isToday ? "امروز" : "گذشته"}</span>
+          </div>
+          <div class="session-stats">
+            <span>حاضر <strong class="num">${UI.fa(c.present)}</strong></span>
+            <span>تأخیر <strong class="num">${UI.fa(c.late)}</strong></span>
+            <span>غایب <strong class="num">${UI.fa(c.absent)}</strong></span>
+            <span>ثبت <strong class="num">${UI.fa(c.marked)}/${UI.fa(c.total)}</strong></span>
+          </div>
+          ${c.notes ? `<p class="muted" style="font-size:.92rem">${UI.escapeHtml(c.notes)}</p>` : ""}
+          ${
+            day.workouts.length
+              ? day.workouts
+                  .map(
+                    (w) => `
+                <div class="session-workout">
+                  <div class="space-between">
+                    <strong>${UI.escapeHtml(w.title)}</strong>
+                    <span class="badge ${w.status === "published" ? "badge-ok" : "badge-warn"}">${
+                      w.status === "published" ? "منتشر شده" : "پیش‌نویس"
+                    }</span>
+                  </div>
+                  <p class="muted" style="font-size:.9rem">${UI.fa(w.meters)} متر • ${UI.fa(w.minutes)} دقیقه • ${UI.escapeHtml(w.focus)}</p>
+                  <div class="workout-output">
+                    ${w.sets
+                      .map(
+                        (s) => `<div class="workout-row"><span>${UI.escapeHtml(s.phase)}</span><span>${UI.escapeHtml(s.detail)}</span><span class="num">${UI.fa(s.meters)} م</span></div>`
+                      )
+                      .join("")}
+                  </div>
+                </div>`
+                  )
+                  .join("")
+              : '<p class="muted" style="font-size:.92rem">برای این روز جلسه‌ای ثبت نشده است.</p>'
+          }
+          ${
+            day.isToday
+              ? `<div class="row">
+                  <button class="btn-white btn-sm" data-action="go" data-hash="#/app/attendance">حضور و غیاب امروز</button>
+                  <button class="btn-primary btn-sm" data-action="go" data-hash="#/app/workout">ساخت جلسه تازه</button>
+                </div>`
+              : ""
+          }
+        </section>`;
+      })
+      .join("");
+
+    const body = `
+      <div class="stack-lg">
+        ${UI.sectionTitle("جلسات گذشته", "حضور هر روز و برنامه تمرینی همان جلسه.", "#/app")}
+        <div class="grid">
+          ${UI.kpi("کل جلسات", UI.fa(history.length), "روزهای تمرین ثبت‌شده")}
+          ${UI.kpi("برنامه منتشرشده", UI.fa(publishedCount), "قابل مشاهده برای شاگردان")}
+          ${UI.kpi("پیش‌نویس", UI.fa(Math.max(0, totalWorkouts - publishedCount)), "در انتظار تأیید")}
+        </div>
+        <div class="stack">${cards}</div>
+      </div>`;
+
+    return UI.shell("#/app/sessions", body);
+  }
+
   /* ---------- آنالیز بیومکانیک ---------- */
 
   function biomechPage() {
@@ -850,6 +942,7 @@ const CoachViews = (() => {
     students,
     student360,
     workoutPage,
+    sessionsPage,
     biomechPage,
     financePage,
     vaultPage,

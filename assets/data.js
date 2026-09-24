@@ -107,7 +107,7 @@ const VALUE_PILLARS = [
 const IMPACT_METRICS = [
   { value: "۸۰٪", label: "کاهش زمان اداری مربی" },
   { value: "۴۰٪", label: "افزایش درآمد با حفظ شناگر" },
-  { value: "۸۵٪+", label: "حاشیه سود ناخالص مدل SaaS" },
+  { value: "۳ دقیقه", label: "تا ساخت اولین جلسه تمرین" },
 ];
 
 const PAIN_POINTS = [
@@ -357,3 +357,96 @@ const SESSION_DATES = [
 
 const TODAY_LABEL = "دوشنبه، ۳۱ شهریور ۱۴۰۴";
 const TODAY_KEY = "۱۴۰۴/۰۶/۳۱";
+
+/* جلسات نمونه برای آرشیو مربی — با تاریخ‌های حضور و غیاب هم‌خوان است */
+const SAMPLE_WORKOUTS = [
+  {
+    title: "جلسه سرعت — نوجوانان رقابتی",
+    group: "نوجوانان",
+    level: "رقابتی",
+    stroke: "کرال سینه",
+    focus: "سرعت",
+    minutes: 75,
+    poolLength: 25,
+    rateTarget: 78,
+    meters: 1800,
+    laps: 72,
+    coachTip: "بین تکرارهای سرعتی استراحت را کامل بدهید.",
+    source: "ai-text",
+    status: "published",
+    createdAt: "۱۴۰۴/۰۶/۲۸",
+    sets: [
+      { phase: "گرم‌کردن", detail: "۴ × ۱۰۰ متر ترکیبی سبک", meters: 400, note: "تنفس دوطرفه" },
+      { phase: "تکنیک", detail: "۶ × ۵۰ متر دریل کچ‌آپ", meters: 300, note: "دست جلو ثابت بماند" },
+      { phase: "ست اصلی", detail: "۱۰ × ۵۰ متر سرعت با استراحت ۴۵ ثانیه", meters: 500, note: "ریت هدف ۷۸" },
+      { phase: "ست پا", detail: "۸ × ۵۰ متر پا تناوبی", meters: 400, note: "لگن بالا" },
+      { phase: "سردکردن", detail: "۲۰۰ متر شنای آزاد سبک", meters: 200, note: "ضربان زیر ۱۲۰" },
+    ],
+  },
+  {
+    title: "جلسه تکنیک قورباغه — ۱۰ تا ۱۳ سال",
+    group: "۱۰ تا ۱۳ سال",
+    level: "متوسط",
+    stroke: "قورباغه",
+    focus: "تکنیک",
+    minutes: 60,
+    poolLength: 25,
+    rateTarget: 52,
+    meters: 1000,
+    laps: 40,
+    coachTip: "در ست تکنیک سرعت را قربانی کیفیت کنید.",
+    source: "manual",
+    status: "published",
+    createdAt: "۱۴۰۴/۰۶/۲۶",
+    sets: [
+      { phase: "گرم‌کردن", detail: "۳۰۰ متر ترکیبی", meters: 300, note: "شانه باز" },
+      { phase: "تکنیک", detail: "۸ × ۲۵ متر کشش قورباغه", meters: 200, note: "سر دیر بیرون بیاید" },
+      { phase: "ست اصلی", detail: "۶ × ۵۰ متر قورباغه آرام", meters: 300, note: "زمان‌بندی دست و پا" },
+      { phase: "سردکردن", detail: "۲۰۰ متر کرال پشت", meters: 200, note: "آرام" },
+    ],
+  },
+  {
+    title: "جلسه استقامت — جوانان",
+    group: "جوانان",
+    level: "پیشرفته",
+    stroke: "کرال سینه",
+    focus: "استقامت",
+    minutes: 90,
+    poolLength: 25,
+    rateTarget: 68,
+    meters: 2900,
+    laps: 116,
+    coachTip: "پیش از ست اصلی دو تکرار با شدت هدف بزنید.",
+    source: "ai-voice",
+    status: "published",
+    createdAt: "۱۴۰۴/۰۶/۲۴",
+    sets: [
+      { phase: "گرم‌کردن", detail: "۶۰۰ متر ترکیبی", meters: 600, note: "ضربان آرام" },
+      { phase: "ست اصلی", detail: "۸ × ۲۰۰ متر کرال سینه", meters: 1600, note: "استراحت ۲۰ ثانیه" },
+      { phase: "ست پا", detail: "۴ × ۱۰۰ متر پا", meters: 400, note: "فین کوتاه" },
+      { phase: "سردکردن", detail: "۳۰۰ متر آزاد", meters: 300, note: "ریکاوری" },
+    ],
+  },
+  {
+    title: "جلسه استارت و دیواره",
+    group: "نوجوانان",
+    level: "پیشرفته",
+    stroke: "کرال پشت",
+    focus: "استارت",
+    minutes: 60,
+    poolLength: 25,
+    rateTarget: 64,
+    meters: 1100,
+    laps: 44,
+    coachTip: "اول کیفیت ورود به آب، بعد سرعت.",
+    source: "ai-text",
+    status: "published",
+    createdAt: "۱۴۰۴/۰۶/۲۱",
+    sets: [
+      { phase: "گرم‌کردن", detail: "۴۰۰ متر پشت و سینه", meters: 400, note: "شانه گرم شود" },
+      { phase: "استارت", detail: "۸ × ۲۵ متر استارت و ۱۵ متر زیرآب", meters: 200, note: "خط مستقیم" },
+      { phase: "ست اصلی", detail: "۶ × ۵۰ متر پشت با برگشت سریع", meters: 300, note: "لمس دو دست" },
+      { phase: "سردکردن", detail: "۲۰۰ متر آزاد", meters: 200, note: "آرام" },
+    ],
+  },
+];

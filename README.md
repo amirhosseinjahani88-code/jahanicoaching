@@ -3,14 +3,6 @@
 دموی تعاملی فاز ۱ از پلتفرم تخصصی مربیگری و تحلیل بیومکانیک شنا.
 بدون نیاز به Node یا نصب پکیج اجرا می‌شود؛ فقط HTML، CSS و JavaScript ساده.
 
-## نسخه آنلاین
-
-دمو روی GitHub Pages منتشر شده است:
-
-**https://amirhosseinjahani88-code.github.io/swim-jahani-app/**
-
-هر push روی شاخه `main` به‌صورت خودکار با ورک‌فلوی `.github/workflows/deploy.yml` دوباره منتشر می‌شود.
-
 ## اجرا روی سیستم خودتان
 
 ۱. فایل `index.html` را با مرورگر باز کنید (دوبار کلیک).

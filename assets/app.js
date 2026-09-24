@@ -68,6 +68,7 @@ const APP = (() => {
       if (hash.startsWith("#/app/student/")) return CoachViews.student360(parts[2]);
       if (hash === "#/app/attendance") return CoachViews.attendance();
       if (hash === "#/app/students") return CoachViews.students();
+      if (hash === "#/app/sessions") return CoachViews.sessionsPage();
       if (hash === "#/app/workout") return CoachViews.workoutPage();
       if (hash === "#/app/biomech") return CoachViews.biomechPage();
       if (hash === "#/app/finance") return CoachViews.financePage();
