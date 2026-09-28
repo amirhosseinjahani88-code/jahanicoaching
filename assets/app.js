@@ -51,6 +51,7 @@ const APP = (() => {
     }
     if (hash === "#/" || hash === "#") return PublicViews.landing();
     if (hash === "#/pricing") return PublicViews.pricing();
+    if (hash === "#/checkout") return PublicViews.checkout();
     if (hash === "#/auth") return PublicViews.auth();
     if (hash === "#/admin-login") return PublicViews.adminLogin();
 
@@ -190,6 +191,13 @@ const APP = (() => {
       }
     });
 
+    document.addEventListener("change", (event) => {
+      if (event.target.id !== "auth-plan") return;
+      const button = document.getElementById("auth-submit");
+      if (!button) return;
+      button.textContent = event.target.value === "pro" ? "ادامه به سبد خرید" : "تکمیل ثبت‌نام و ورود به پنل مربی";
+    });
+
     document.addEventListener("submit", (event) => {
       if (event.target.id !== "auth-form") return;
       event.preventDefault();
@@ -212,8 +220,46 @@ const APP = (() => {
         errorBox.textContent = "برای ادامه، پذیرش قوانین لازم است.";
         return;
       }
+      if (plan === "pro") {
+        ui.checkoutDraft = { firstName, lastName, phone };
+        UI.navigate("#/checkout");
+        return;
+      }
       SJ.signup({ firstName, lastName, phone, plan });
       UI.toast(`خوش آمدید مربی ${firstName}!`);
+      UI.navigate("#/app");
+    });
+
+    document.addEventListener("submit", (event) => {
+      if (event.target.id !== "checkout-form") return;
+      event.preventDefault();
+      const errorBox = document.getElementById("checkout-error");
+      if (SJ.isLoggedIn()) {
+        SJ.setPlan("pro");
+        ui.checkoutDraft = null;
+        UI.toast("خرید فرضی ثبت شد. وارد پنل شدید.");
+        UI.navigate("#/app");
+        return;
+      }
+      const firstName = value("checkout-first").trim();
+      const lastName = value("checkout-last").trim();
+      const phone = toEnglishDigits(value("checkout-phone")).trim();
+      const terms = document.getElementById("checkout-terms").checked;
+      if (!firstName || !lastName) {
+        errorBox.textContent = "نام و نام خانوادگی را کامل وارد کنید.";
+        return;
+      }
+      if (!/^09\d{9}$/.test(phone)) {
+        errorBox.textContent = "شماره همراه باید ۱۱ رقم و با ۰۹ شروع شود.";
+        return;
+      }
+      if (!terms) {
+        errorBox.textContent = "برای خرید، پذیرش قوانین لازم است.";
+        return;
+      }
+      SJ.signup({ firstName, lastName, phone, plan: "pro" });
+      ui.checkoutDraft = null;
+      UI.toast("خرید فرضی ثبت شد. وارد پنل شدید.");
       UI.navigate("#/app");
     });
 
@@ -275,23 +321,30 @@ APP.action("admin:login", () => {
 });
 
 APP.action("plan:choose", (data) => {
+  if (data.plan === "pro") {
+    if (SJ.isLoggedIn() && SJ.isPro()) {
+      UI.toast("پلن مستری پرو همین حالا فعال است.");
+      UI.navigate("#/app");
+      return;
+    }
+    UI.navigate("#/checkout");
+    return;
+  }
   if (!SJ.isLoggedIn()) {
     UI.navigate("#/auth");
     return;
   }
   SJ.setPlan(data.plan);
-  UI.toast(data.plan === "pro" ? "پلن مستری پرو فعال شد." : "پلن اسنشیال فعال شد.");
+  UI.toast("پلن اسنشیال فعال شد.");
   APP.render();
 });
 
 APP.action("plan:upgrade", () => {
-  if (!SJ.isLoggedIn()) {
-    UI.navigate("#/auth");
+  if (SJ.isLoggedIn() && SJ.isPro()) {
+    UI.toast("پلن مستری پرو همین حالا فعال است.");
     return;
   }
-  SJ.setPlan("pro");
-  UI.toast("پلن مستری پرو فعال شد؛ همه قابلیت‌ها باز شد.");
-  APP.render();
+  UI.navigate("#/checkout");
 });
 
 APP.action("demo:reset", () => {

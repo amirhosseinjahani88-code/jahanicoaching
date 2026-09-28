@@ -1,0 +1,14 @@
+---
+description: After each requested product change, publish it to GitHub Pages
+alwaysApply: true
+---
+
+# Publish product changes to GitHub
+
+When a requested change to this demo is finished and verified, commit it and push `main` so GitHub Pages updates. Do not wait for a separate publish request.
+
+- Remote: `https://github.com/amirhosseinjahani88-code/jahanicoaching.git`
+- Public site: `https://amirhosseinjahani88-code.github.io/jahanicoaching/`
+- Never commit `ai-key.local.txt`, `.env`, or API keys.
+- Real AI stays on localhost only. The public site must keep an empty `aiEndpoint`.
+- Do not force-push.

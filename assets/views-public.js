@@ -181,7 +181,17 @@ const PublicViews = (() => {
                 ${plan.locked.map((f) => `<li class="muted">🔒 ${f}</li>`).join("")}
               </ul>
               <button class="${plan.id === "pro" ? "btn-primary" : "btn-white"} btn-block" data-action="plan:choose" data-plan="${plan.id}">
-                ${loggedIn ? (SJ.plan() === plan.id ? "پلن فعال شما" : `فعال‌سازی ${plan.title}`) : `شروع با ${plan.title}`}
+                ${
+                  plan.id === "pro"
+                    ? loggedIn && SJ.plan() === "pro"
+                      ? "پلن فعال شما"
+                      : "انتخاب و رفتن به سبد خرید"
+                    : loggedIn
+                      ? SJ.plan() === plan.id
+                        ? "پلن فعال شما"
+                        : `فعال‌سازی ${plan.title}`
+                      : `شروع با ${plan.title}`
+                }
               </button>
             </div>`
             )
@@ -240,20 +250,87 @@ const PublicViews = (() => {
             <label class="field">
               <span style="color:#e2e8f0">پلن شروع</span>
               <select id="auth-plan">
-                <option value="pro">مستری پرو — دسترسی کامل</option>
+                <option value="pro">مستری پرو — ادامه در سبد خرید</option>
                 <option value="essential">اسنشیال — پایه</option>
               </select>
             </label>
+            <p class="on-dark-muted" style="font-size:.92rem">اگر مستری پرو را انتخاب کنید، اول سبد خرید می‌آید. ورود به پنل فقط بعد از خرید فرضی است.</p>
             <label class="checkbox-row">
               <input type="checkbox" id="auth-terms" checked />
               <span class="on-dark-muted">قوانین استفاده و امنیت متدولوژی اختصاصی ${PLATFORM.name} را می‌پذیرم.</span>
             </label>
             <div id="auth-error" class="field-error"></div>
-            <button type="submit" class="btn-primary btn-block">تکمیل ثبت‌نام و ورود به پنل مربی</button>
+            <button type="submit" class="btn-primary btn-block" id="auth-submit">ادامه به سبد خرید</button>
             <button type="button" class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/admin-login">ورود مدیر پلتفرم (دمو)</button>
           </form>
         </div>
       </div>`);
+  }
+
+  function checkout() {
+    const plan = PLANS.pro;
+    const loggedIn = SJ.isLoggedIn();
+    const draft = APP.ui.checkoutDraft || {};
+    const coach = loggedIn ? SJ.raw.coach : null;
+    const firstName = draft.firstName || (coach ? coach.firstName : "امیرحسین");
+    const lastName = draft.lastName || (coach ? coach.lastName : "جهانی");
+    const phone = draft.phone || (coach ? coach.phone : "09904703935");
+
+    return `
+      <main class="page stack-lg">
+        ${UI.sectionTitle("سبد خرید", "این پرداخت فرضی است و هیچ پول واقعی کم نمی‌شود.", "#/pricing")}
+        <div class="two-col">
+          <section class="card stack cart">
+            <div class="space-between">
+              <h2 class="title-md">سفارش شما</h2>
+              <span class="badge badge-warn">پرداخت فرضی</span>
+            </div>
+            <div class="cart-row">
+              <div class="stack" style="gap:.2rem">
+                <strong>${plan.title}</strong>
+                <span class="muted">${plan.audience}</span>
+                <span class="muted">اشتراک یک‌ساله</span>
+              </div>
+              <strong class="num">${UI.money(plan.priceToman)}</strong>
+            </div>
+            <ul class="plan-list">
+              ${plan.features.slice(0, 4).map((feature) => `<li>${feature}</li>`).join("")}
+            </ul>
+            <div class="divider"></div>
+            <div class="cart-row cart-total">
+              <span>مبلغ قابل پرداخت</span>
+              <strong>${plan.priceLabel}</strong>
+            </div>
+          </section>
+
+          <form class="card stack" id="checkout-form">
+            <h2 class="title-md">${loggedIn ? "تأیید خرید" : "ثبت‌نام"}</h2>
+            ${
+              loggedIn
+                ? `<p class="muted">خرید روی حساب ${UI.escapeHtml(SJ.coachName())} ثبت می‌شود.</p>`
+                : `<label class="field">
+                    <span>نام</span>
+                    <input id="checkout-first" value="${UI.escapeHtml(firstName)}" required />
+                  </label>
+                  <label class="field">
+                    <span>نام خانوادگی</span>
+                    <input id="checkout-last" value="${UI.escapeHtml(lastName)}" required />
+                  </label>
+                  <label class="field">
+                    <span>شماره همراه</span>
+                    <input id="checkout-phone" value="${UI.escapeHtml(phone)}" inputmode="numeric" required />
+                  </label>
+                  <label class="checkbox-row">
+                    <input type="checkbox" id="checkout-terms" checked />
+                    <span>قوانین استفاده ${PLATFORM.name} را می‌پذیرم.</span>
+                  </label>`
+            }
+            <div id="checkout-error" class="checkout-error"></div>
+            <button type="submit" class="btn-primary btn-block">خرید فرضی و ورود به پنل</button>
+          </form>
+        </div>
+        ${UI.designerCredit()}
+      </main>`;
   }
 
   function adminLogin() {
@@ -377,5 +454,5 @@ const PublicViews = (() => {
       </div>`);
   }
 
-  return { landing, pricing, auth, adminLogin, parentPortal };
+  return { landing, pricing, auth, checkout, adminLogin, parentPortal };
 })();
