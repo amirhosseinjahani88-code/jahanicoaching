@@ -236,7 +236,7 @@ const UI = (() => {
       : "";
     const planBadge = SJ.isPro()
       ? '<span class="badge badge-blue">مستری پرو</span>'
-      : '<span class="badge badge-warn">اسنشیال</span>';
+      : '<span class="badge badge-warn">اقتصادی</span>';
     return `
       ${ghostBanner}
       <header class="topbar">

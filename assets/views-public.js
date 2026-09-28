@@ -115,7 +115,7 @@ const PublicViews = (() => {
             <h2 class="title-lg" style="color:#fff">ساختار دسترسی‌ها</h2>
             <div class="grid">
               ${[
-                { title: "پلن اسنشیال", text: "داشبورد، شاگردان، طراح تمرین دستی، حضور و غیاب، پیش‌نمایش گزارش" },
+                { title: "پلن اقتصادی", text: "داشبورد، شاگردان، طراح تمرین دستی، حضور و غیاب، پیش‌نمایش گزارش" },
                 { title: "پلن مستری پرو", text: "کاکپیت، پروفایل ۳۶۰، AI Workout، دستیار مالی، آنالیز ریت، آرشیو متدولوژی" },
                 { title: "پنل مستر کنترل", text: "داشبورد هوش تجاری، دایرکتوری مربیان با Ghost Login، CMS متدولوژی" },
                 { title: "پورتال مستقل اولیا", text: "گزارش پیشرفت، رکوردها، نمودار ریت، حضور و وضعیت تسویه" },
@@ -241,7 +241,7 @@ const PublicViews = (() => {
               <span style="color:#e2e8f0">پلن شروع</span>
               <select id="auth-plan">
                 <option value="pro">مستری پرو — ادامه در سبد خرید</option>
-                <option value="essential">اسنشیال — ادامه در سبد خرید</option>
+                <option value="essential">اقتصادی — ادامه در سبد خرید</option>
               </select>
             </label>
             <p class="on-dark-muted" style="font-size:.92rem">هر دو پلن اول به سبد خرید می‌روند. ورود به پنل فقط بعد از خرید فرضی است.</p>

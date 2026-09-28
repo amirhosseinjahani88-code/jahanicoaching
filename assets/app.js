@@ -313,7 +313,7 @@ APP.action("admin:login", () => {
 APP.action("plan:choose", (data) => {
   const plan = data.plan === "essential" ? "essential" : "pro";
   if (SJ.isLoggedIn() && SJ.plan() === plan) {
-    UI.toast(plan === "pro" ? "پلن مستری پرو همین حالا فعال است." : "پلن اسنشیال همین حالا فعال است.");
+    UI.toast(plan === "pro" ? "پلن مستری پرو همین حالا فعال است." : "پلن اقتصادی همین حالا فعال است.");
     UI.navigate("#/app");
     return;
   }

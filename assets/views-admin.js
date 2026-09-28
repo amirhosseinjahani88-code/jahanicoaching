@@ -50,7 +50,7 @@ const AdminViews = (() => {
 
         <div class="grid">
           ${UI.kpi("درآمد سالانه قراردادی", UI.millions(m.arr), `هدف سال اول: ${UI.millions(BUSINESS_TARGETS.totalRevenue)}`)}
-          ${UI.kpi("مربیان فعال", UI.fa(COACHES.length), `${UI.fa(m.pro.length)} پرو / ${UI.fa(m.essential.length)} اسنشیال`)}
+          ${UI.kpi("مربیان فعال", UI.fa(COACHES.length), `${UI.fa(m.pro.length)} پرو / ${UI.fa(m.essential.length)} اقتصادی`)}
           ${UI.kpi("شناگران زیر پوشش", UI.fa(m.students), "در همه باشگاه‌ها")}
           ${UI.kpi("ریسک ریزش", UI.fa(m.atRisk.length), "مربی با فعالیت کم", m.atRisk.length ? "kpi-warn" : "")}
         </div>
@@ -59,7 +59,7 @@ const AdminViews = (() => {
           <h2 class="title-md">پیشرفت نسبت به هدف درآمدی سال اول</h2>
           ${UI.progressBar(targetProgress, `${UI.millions(m.arr)} از ${UI.millions(BUSINESS_TARGETS.totalRevenue)}`)}
           <div class="grid">
-            ${UI.kpi("هدف اسنشیال", `${UI.fa(BUSINESS_TARGETS.essentialCoaches)} مربی`, UI.millions(BUSINESS_TARGETS.essentialRevenue))}
+            ${UI.kpi("هدف اقتصادی", `${UI.fa(BUSINESS_TARGETS.essentialCoaches)} مربی`, UI.millions(BUSINESS_TARGETS.essentialRevenue))}
             ${UI.kpi("هدف مستری پرو", `${UI.fa(BUSINESS_TARGETS.proCoaches)} مربی`, UI.millions(BUSINESS_TARGETS.proRevenue))}
             ${UI.kpi("فروش متدولوژی", UI.millions(BUSINESS_TARGETS.vaultRevenue), "وبینار و طرح‌درس")}
             ${UI.kpi("حاشیه سود ناخالص", `${UI.fa(BUSINESS_TARGETS.grossMargin)}٪`, `هزینه زیرساخت ${UI.millions(BUSINESS_TARGETS.infraCost)}`)}
@@ -71,7 +71,7 @@ const AdminViews = (() => {
           ${UI.barChart({
             labels: SIGNUPS_BY_MONTH.map((r) => r.month),
             series: [
-              { name: "اسنشیال", color: "#0a84ff", values: SIGNUPS_BY_MONTH.map((r) => r.essential) },
+              { name: "اقتصادی", color: "#0a84ff", values: SIGNUPS_BY_MONTH.map((r) => r.essential) },
               { name: "مستری پرو", color: "#00d2ff", values: SIGNUPS_BY_MONTH.map((r) => r.pro) },
             ],
           })}
@@ -107,7 +107,7 @@ const AdminViews = (() => {
             <span class="muted" style="font-size:.88rem">${UI.escapeHtml(c.city)} • ${UI.escapeHtml(c.pool)}</span>
           </span>
         </span>
-        <span class="badge ${c.plan === "pro" ? "badge-blue" : "badge-warn"}">${c.plan === "pro" ? "مستری پرو" : "اسنشیال"}</span>
+        <span class="badge ${c.plan === "pro" ? "badge-blue" : "badge-warn"}">${c.plan === "pro" ? "مستری پرو" : "اقتصادی"}</span>
         <span class="num">${UI.fa(c.students)} شاگرد</span>
         <span class="muted">${UI.escapeHtml(c.lastActive)}</span>
         <span class="badge ${c.risk === "low" ? "badge-ok" : "badge-warn"}">${riskLabel[c.risk]}</span>

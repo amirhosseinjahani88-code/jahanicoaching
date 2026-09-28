@@ -14,8 +14,8 @@ const PLATFORM = {
 const PLANS = {
   essential: {
     id: "essential",
-    title: "پلن اسنشیال",
-    latin: "Essential",
+    title: "پلن اقتصادی",
+    latin: "Economy",
     audience: "مربیان تازه‌کار و مدارس شنای مبتدی",
     priceToman: 5000000,
     priceLabel: "۵٫۰۰۰٫۰۰۰ تومان / سالانه",
@@ -58,7 +58,7 @@ const PLANS = {
 const REVENUE_STREAMS = [
   {
     id: "essential",
-    title: "پلن اسنشیال",
+    title: "پلن اقتصادی",
     audience: "مربیان تازه‌کار و مدارس شنای مبتدی",
     price: "۵٫۰۰۰٫۰۰۰ تومان / سالانه",
     note: "مدیریت شاگردان، طراحی دستی تمرین، حضور و غیاب، کارنامه متنی اولیا",

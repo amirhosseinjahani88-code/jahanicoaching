@@ -23,7 +23,7 @@ const CoachViews = (() => {
           <div class="stack" style="gap:.25rem">
             <span class="eyebrow">${TODAY_LABEL}</span>
             <h1 class="title-xl">سلام مربی ${UI.escapeHtml(SJ.raw.coach.firstName)} ${UI.escapeHtml(SJ.raw.coach.lastName)}</h1>
-            <p class="muted">${pro ? "کاکپیت مستری پرو" : "داشبورد پلن اسنشیال"} • ${UI.escapeHtml(SJ.raw.coach.pool)}</p>
+            <p class="muted">${pro ? "کاکپیت مستری پرو" : "داشبورد پلن اقتصادی"} • ${UI.escapeHtml(SJ.raw.coach.pool)}</p>
             <p class="muted">${PLATFORM.designerRole}: ${PLATFORM.designer}</p>
           </div>
           <button class="card-gradient stack plan-chip" data-action="go" data-hash="#/app/profile">
@@ -947,7 +947,7 @@ const CoachViews = (() => {
             <div class="row">
               ${
                 pro
-                  ? `<button class="btn-white btn-sm" data-action="plan:choose" data-plan="essential">تغییر به اسنشیال</button>`
+                  ? `<button class="btn-white btn-sm" data-action="plan:choose" data-plan="essential">تغییر به اقتصادی</button>`
                   : `<button class="btn-primary btn-sm" data-action="plan:upgrade">ارتقا به مستری پرو</button>`
               }
               <button class="btn-quiet" data-action="go" data-hash="#/pricing">مقایسه پلن‌ها</button>
