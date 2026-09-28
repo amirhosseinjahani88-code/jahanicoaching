@@ -181,17 +181,7 @@ const PublicViews = (() => {
                 ${plan.locked.map((f) => `<li class="muted">🔒 ${f}</li>`).join("")}
               </ul>
               <button class="${plan.id === "pro" ? "btn-primary" : "btn-white"} btn-block" data-action="plan:choose" data-plan="${plan.id}">
-                ${
-                  plan.id === "pro"
-                    ? loggedIn && SJ.plan() === "pro"
-                      ? "پلن فعال شما"
-                      : "انتخاب و رفتن به سبد خرید"
-                    : loggedIn
-                      ? SJ.plan() === plan.id
-                        ? "پلن فعال شما"
-                        : `فعال‌سازی ${plan.title}`
-                      : `شروع با ${plan.title}`
-                }
+                ${loggedIn && SJ.plan() === plan.id ? "پلن فعال شما" : "انتخاب و رفتن به سبد خرید"}
               </button>
             </div>`
             )
@@ -251,10 +241,10 @@ const PublicViews = (() => {
               <span style="color:#e2e8f0">پلن شروع</span>
               <select id="auth-plan">
                 <option value="pro">مستری پرو — ادامه در سبد خرید</option>
-                <option value="essential">اسنشیال — پایه</option>
+                <option value="essential">اسنشیال — ادامه در سبد خرید</option>
               </select>
             </label>
-            <p class="on-dark-muted" style="font-size:.92rem">اگر مستری پرو را انتخاب کنید، اول سبد خرید می‌آید. ورود به پنل فقط بعد از خرید فرضی است.</p>
+            <p class="on-dark-muted" style="font-size:.92rem">هر دو پلن اول به سبد خرید می‌روند. ورود به پنل فقط بعد از خرید فرضی است.</p>
             <label class="checkbox-row">
               <input type="checkbox" id="auth-terms" checked />
               <span class="on-dark-muted">قوانین استفاده و امنیت متدولوژی اختصاصی ${PLATFORM.name} را می‌پذیرم.</span>
@@ -267,8 +257,8 @@ const PublicViews = (() => {
       </div>`);
   }
 
-  function checkout() {
-    const plan = PLANS.pro;
+  function checkout(planId) {
+    const plan = planId === "essential" ? PLANS.essential : PLANS.pro;
     const loggedIn = SJ.isLoggedIn();
     const draft = APP.ui.checkoutDraft || {};
     const coach = loggedIn ? SJ.raw.coach : null;
@@ -304,6 +294,7 @@ const PublicViews = (() => {
           </section>
 
           <form class="card stack" id="checkout-form">
+            <input type="hidden" id="checkout-plan" value="${plan.id}" />
             <h2 class="title-md">${loggedIn ? "تأیید خرید" : "ثبت‌نام"}</h2>
             ${
               loggedIn

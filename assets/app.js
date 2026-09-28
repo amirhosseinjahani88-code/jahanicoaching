@@ -51,7 +51,9 @@ const APP = (() => {
     }
     if (hash === "#/" || hash === "#") return PublicViews.landing();
     if (hash === "#/pricing") return PublicViews.pricing();
-    if (hash === "#/checkout") return PublicViews.checkout();
+    if (hash === "#/checkout" || hash.startsWith("#/checkout/")) {
+      return PublicViews.checkout(parts[1] === "essential" ? "essential" : "pro");
+    }
     if (hash === "#/auth") return PublicViews.auth();
     if (hash === "#/admin-login") return PublicViews.adminLogin();
 
@@ -191,13 +193,6 @@ const APP = (() => {
       }
     });
 
-    document.addEventListener("change", (event) => {
-      if (event.target.id !== "auth-plan") return;
-      const button = document.getElementById("auth-submit");
-      if (!button) return;
-      button.textContent = event.target.value === "pro" ? "ادامه به سبد خرید" : "تکمیل ثبت‌نام و ورود به پنل مربی";
-    });
-
     document.addEventListener("submit", (event) => {
       if (event.target.id !== "auth-form") return;
       event.preventDefault();
@@ -220,22 +215,17 @@ const APP = (() => {
         errorBox.textContent = "برای ادامه، پذیرش قوانین لازم است.";
         return;
       }
-      if (plan === "pro") {
-        ui.checkoutDraft = { firstName, lastName, phone };
-        UI.navigate("#/checkout");
-        return;
-      }
-      SJ.signup({ firstName, lastName, phone, plan });
-      UI.toast(`خوش آمدید مربی ${firstName}!`);
-      UI.navigate("#/app");
+      ui.checkoutDraft = { firstName, lastName, phone };
+      UI.navigate(plan === "essential" ? "#/checkout/essential" : "#/checkout/pro");
     });
 
     document.addEventListener("submit", (event) => {
       if (event.target.id !== "checkout-form") return;
       event.preventDefault();
       const errorBox = document.getElementById("checkout-error");
+      const plan = value("checkout-plan") === "essential" ? "essential" : "pro";
       if (SJ.isLoggedIn()) {
-        SJ.setPlan("pro");
+        SJ.setPlan(plan);
         ui.checkoutDraft = null;
         UI.toast("خرید فرضی ثبت شد. وارد پنل شدید.");
         UI.navigate("#/app");
@@ -257,7 +247,7 @@ const APP = (() => {
         errorBox.textContent = "برای خرید، پذیرش قوانین لازم است.";
         return;
       }
-      SJ.signup({ firstName, lastName, phone, plan: "pro" });
+      SJ.signup({ firstName, lastName, phone, plan });
       ui.checkoutDraft = null;
       UI.toast("خرید فرضی ثبت شد. وارد پنل شدید.");
       UI.navigate("#/app");
@@ -321,22 +311,13 @@ APP.action("admin:login", () => {
 });
 
 APP.action("plan:choose", (data) => {
-  if (data.plan === "pro") {
-    if (SJ.isLoggedIn() && SJ.isPro()) {
-      UI.toast("پلن مستری پرو همین حالا فعال است.");
-      UI.navigate("#/app");
-      return;
-    }
-    UI.navigate("#/checkout");
+  const plan = data.plan === "essential" ? "essential" : "pro";
+  if (SJ.isLoggedIn() && SJ.plan() === plan) {
+    UI.toast(plan === "pro" ? "پلن مستری پرو همین حالا فعال است." : "پلن اسنشیال همین حالا فعال است.");
+    UI.navigate("#/app");
     return;
   }
-  if (!SJ.isLoggedIn()) {
-    UI.navigate("#/auth");
-    return;
-  }
-  SJ.setPlan(data.plan);
-  UI.toast("پلن اسنشیال فعال شد.");
-  APP.render();
+  UI.navigate(`#/checkout/${plan}`);
 });
 
 APP.action("plan:upgrade", () => {
@@ -344,7 +325,7 @@ APP.action("plan:upgrade", () => {
     UI.toast("پلن مستری پرو همین حالا فعال است.");
     return;
   }
-  UI.navigate("#/checkout");
+  UI.navigate("#/checkout/pro");
 });
 
 APP.action("demo:reset", () => {
