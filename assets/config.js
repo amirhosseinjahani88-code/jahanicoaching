@@ -1,17 +1,20 @@
 /* تنظیمات عمومی برنامه.
 
-   هوش مصنوعی واقعی فقط وقتی فعال می‌شود که برنامه از روی localhost اجرا شده باشد،
-   یعنی با serve.ps1 روی دستگاه خودتان. روی نسخه منتشرشده در GitHub Pages
-   مقدار aiEndpoint خالی می‌ماند و برنامه سراغ موتور محلی می‌رود؛
-   بنابراین هیچ بازدیدکننده‌ای نمی‌تواند از اعتبار API استفاده کند. */
+   هوش مصنوعی واقعی فقط روی دستگاه خودتان و فقط با serve.ps1 فعال می‌شود.
+   لینک گیت‌هاب، دامنه github.io و هر میزبان دیگر هرگز endpoint نمی‌گیرند
+   و برنامه سراغ موتور نمایشی می‌رود؛ اعتبار API خرج نمی‌شود. */
 
 (() => {
-  const host = window.location.hostname;
-  const isLocal = host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+  const host = String(window.location.hostname || "").toLowerCase();
+  const protocol = String(window.location.protocol || "");
+  const hostedOnGitHub =
+    host.endsWith(".github.io") || host === "github.io" || host === "github.com" || host.endsWith(".githubusercontent.com");
+  const isLoopback = host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+  const isLocalHttp = (protocol === "http:" || protocol === "https:") && isLoopback && !hostedOnGitHub;
 
   window.SJ_CONFIG = {
-    /* روی حالت محلی، پروکسی همان سروری است که صفحه را سرو کرده است. */
-    aiEndpoint: isLocal ? window.location.origin : "",
+    /* فقط پروکسی همین دستگاه. روی گیت‌هاب همیشه خالی می‌ماند. */
+    aiEndpoint: isLocalHttp ? window.location.origin : "",
     aiTimeoutMs: 60000,
   };
 })();

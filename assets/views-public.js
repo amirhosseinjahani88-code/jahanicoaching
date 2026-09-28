@@ -11,7 +11,7 @@ const PublicViews = (() => {
           <header class="site-header">
             <div class="brand" style="color:#fff">
               <span class="brand-mark">🏊</span>
-              <span>شنا جهانی</span>
+              <span>${PLATFORM.name}</span>
             </div>
             <div class="row site-header-actions">
               <button class="btn-ghost btn-sm" data-action="go" data-hash="#/pricing">تعرفه‌ها</button>
@@ -24,6 +24,7 @@ const PublicViews = (() => {
               <div class="row">
                 <span class="badge badge-cyan">✓ تأییدیه اساتید تراز اول</span>
                 <span class="badge badge-light">بدون نیاز به نصب نرم‌افزار</span>
+                <span class="badge badge-light">${PLATFORM.designerRole}: ${PLATFORM.designer}</span>
               </div>
               <h1 class="title-xl" style="color:#fff">سامانه هوشمند مربیگری و تحلیل شنا؛ مبتنی بر متدولوژی جهانی و استانداردهای World Aquatics</h1>
               <p class="on-dark-muted" style="font-size:1.1rem;line-height:1.9">
@@ -47,6 +48,11 @@ const PublicViews = (() => {
                 <span class="badge badge-cyan">${AIRemote.isEnabled() ? "AI واقعی" : "Mock AI"}</span>
               </div>
               <p class="on-dark-muted">یک جمله بگویید، جلسه ساختاریافته بگیرید.</p>
+              ${
+                AIRemote.isEnabled()
+                  ? `<p class="on-dark-muted">برای AI واقعی همین آدرس را باز نگه دار: <span class="num">http://localhost:8777</span></p>`
+                  : `<p class="on-dark-muted">برای AI واقعی فایل <span class="num">شروع.bat</span> را بزن و فقط <span class="num">http://localhost:8777</span> را باز کن.</p>`
+              }
               <label class="field">
                 <span style="color:#e2e8f0">درخواست تمرین</span>
                 <textarea id="demo-brief" rows="3" placeholder="مثلاً: برای نوجوانان رقابتی یک جلسه ۷۵ دقیقه‌ای کرال سینه با تمرکز روی سرعت بنویس">${UI.escapeHtml(APP.demoBrief || AI.voice.samples[0])}</textarea>
@@ -144,6 +150,7 @@ const PublicViews = (() => {
               <span class="on-dark-muted">${PLATFORM.latinName} — ${PLATFORM.vision}</span>
               <button class="btn-quiet" style="color:#94a3b8" data-action="go" data-hash="#/admin-login">ورود مدیر پلتفرم (دمو)</button>
             </div>
+            ${UI.designerCredit({ dark: true })}
           </footer>
         </div>
       </div>`);
@@ -195,6 +202,7 @@ const PublicViews = (() => {
             ).join("")}
           </div>
         </section>
+        ${UI.designerCredit()}
       </main>`;
   }
 
@@ -207,6 +215,7 @@ const PublicViews = (() => {
           <div class="stack">
             <button class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/">→ بازگشت به لندینگ</button>
             <h1 class="title-xl" style="color:#fff">ورود به پنل حرفه‌ای مربیان</h1>
+            <p class="on-dark-muted">${PLATFORM.designerRole}: ${PLATFORM.designer}</p>
             <p class="on-dark-muted">اطلاعات شما در این دمو فقط روی همین مرورگر ذخیره می‌شود.</p>
             <ul class="plan-list on-dark-muted">
               <li>پرونده ۳۶۰ درجه برای هر شناگر</li>
@@ -237,7 +246,7 @@ const PublicViews = (() => {
             </label>
             <label class="checkbox-row">
               <input type="checkbox" id="auth-terms" checked />
-              <span class="on-dark-muted">قوانین استفاده و امنیت متدولوژی اختصاصی شنا جهانی را می‌پذیرم.</span>
+              <span class="on-dark-muted">قوانین استفاده و امنیت متدولوژی اختصاصی ${PLATFORM.name} را می‌پذیرم.</span>
             </label>
             <div id="auth-error" class="field-error"></div>
             <button type="submit" class="btn-primary btn-block">تکمیل ثبت‌نام و ورود به پنل مربی</button>
@@ -254,6 +263,7 @@ const PublicViews = (() => {
           <div class="stack">
             <button class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/">→ بازگشت به لندینگ</button>
             <h1 class="title-xl" style="color:#fff">پنل مستر کنترل</h1>
+            <p class="on-dark-muted">${PLATFORM.designerRole}: ${PLATFORM.designer}</p>
             <p class="on-dark-muted">داشبورد هوش تجاری، دایرکتوری مربیان و مدیریت محتوای متدولوژی.</p>
           </div>
           <div class="card-glass stack">
@@ -280,7 +290,15 @@ const PublicViews = (() => {
         </div>`);
     }
 
-    const report = AI.parentReport(student);
+    if (AIRemote.isEnabled() && !APP.ui.parentReports[student.id]) {
+      APP.ui.parentReports[student.id] = { loading: true };
+      AIRemote.parentReport(student).then((report) => {
+        APP.ui.parentReports[student.id] = report;
+        APP.render();
+      });
+    }
+    const cachedReport = APP.ui.parentReports[student.id];
+    const report = cachedReport && !cachedReport.loading ? cachedReport : AI.parentReport(student);
     const balance = SJ.studentBalance(student.id);
     const sessionsLeft = Math.max(0, student.sessions - student.used);
     const samples = SJ.biomech(student.id).map((s) => AI.analyzeSample({ distance: s.distance, time: s.time, strokes: s.strokes }));
@@ -289,7 +307,7 @@ const PublicViews = (() => {
       <div class="parent-portal">
         <header class="parent-hero">
           <div class="page stack" style="gap:.5rem">
-            <span class="badge badge-cyan">پرتال تأییدشده شنا جهانی</span>
+            <span class="badge badge-cyan">پرتال تأییدشده ${PLATFORM.name}</span>
             <h1 class="title-xl" style="color:#fff">${UI.escapeHtml(student.name)}</h1>
             <p class="on-dark-muted">مربی: ${UI.escapeHtml(SJ.coachName() || "امیرحسین جهانی")} • گروه ${UI.escapeHtml(student.group)} • ماده اصلی ${UI.escapeHtml(student.event)}</p>
           </div>
@@ -353,6 +371,7 @@ const PublicViews = (() => {
 
           <footer class="muted" style="text-align:center;padding:1rem 0">
             این صفحه فقط برای اولیای ${UI.escapeHtml(student.name)} صادر شده است.
+            ${UI.designerCredit()}
           </footer>
         </main>
       </div>`);

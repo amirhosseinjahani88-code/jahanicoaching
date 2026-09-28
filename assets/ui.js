@@ -175,16 +175,57 @@ const UI = (() => {
   /* ---------- چیدمان ---------- */
 
   const COACH_NAV = [
-    { hash: "#/app", label: "کاکپیت", pro: false },
-    { hash: "#/app/attendance", label: "حضور و غیاب", pro: false },
-    { hash: "#/app/students", label: "شاگردان", pro: false },
-    { hash: "#/app/sessions", label: "جلسات", pro: false },
-    { hash: "#/app/workout", label: "تمرین‌نویسی", pro: false },
-    { hash: "#/app/biomech", label: "آنالیز بیومکانیک", pro: true },
-    { hash: "#/app/finance", label: "دستیار مالی", pro: true },
-    { hash: "#/app/vault", label: "آرشیو متدولوژی", pro: true },
-    { hash: "#/app/profile", label: "حساب من", pro: false },
+    { hash: "#/app", label: "کاکپیت" },
+    {
+      id: "club",
+      label: "باشگاه",
+      children: [
+        { hash: "#/app/students", label: "شاگردان" },
+        { hash: "#/app/attendance", label: "حضور و غیاب" },
+        { hash: "#/app/sessions", label: "جلسات" },
+      ],
+    },
+    {
+      id: "training",
+      label: "تمرین",
+      children: [
+        { hash: "#/app/workout", label: "تمرین‌نویسی" },
+        { hash: "#/app/biomech", label: "آنالیز بیومکانیک", pro: true },
+        { hash: "#/app/vault", label: "آرشیو متدولوژی", pro: true },
+      ],
+    },
+    { hash: "#/app/finance", label: "مالی", pro: true },
   ];
+
+  function navItemActive(item, activeHash) {
+    if (item.hash === "#/app") return activeHash === "#/app";
+    if (item.hash === "#/app/students") {
+      return activeHash === item.hash || activeHash.startsWith("#/app/student/");
+    }
+    return activeHash === item.hash;
+  }
+
+  function navButton(item, activeHash) {
+    const locked = item.pro && !SJ.isPro();
+    const current = navItemActive(item, activeHash);
+    return `<button data-action="go" data-hash="${item.hash}" ${current ? 'aria-current="page"' : ""}>${item.label}${locked ? " 🔒" : ""}</button>`;
+  }
+
+  function renderCoachNav(activeHash) {
+    return COACH_NAV.map((item) => {
+      if (!item.children) return navButton(item, activeHash);
+      const open = item.children.some((child) => navItemActive(child, activeHash));
+      return `
+        <div class="nav-group${open ? " is-current" : ""}" data-group="${item.id}">
+          <button class="nav-group-btn" data-action="nav:menu" data-group="${item.id}" aria-expanded="false">
+            ${item.label} <span class="nav-caret">▾</span>
+          </button>
+          <div class="nav-submenu" role="menu">
+            ${item.children.map((child) => navButton(child, activeHash)).join("")}
+          </div>
+        </div>`;
+    }).join("");
+  }
 
   function shell(activeHash, content) {
     const ghostBanner = SJ.isGhost()
@@ -202,25 +243,62 @@ const UI = (() => {
         <div class="topbar-inner">
           <button class="brand" data-action="go" data-hash="#/app">
             <span class="brand-mark">🏊</span>
-            <span>شنا جهانی</span>
+            <span>${PLATFORM.name}</span>
           </button>
           <nav class="nav" aria-label="صفحات مربی">
-            ${COACH_NAV.map(
-              (item) => `<button data-action="go" data-hash="${item.hash}" ${activeHash === item.hash ? 'aria-current="page"' : ""}>${item.label}${item.pro && !SJ.isPro() ? " 🔒" : ""}</button>`
-            ).join("")}
+            ${renderCoachNav(activeHash)}
           </nav>
           <div class="topbar-actions">
-            ${planBadge}
-            <button class="btn-quiet" data-action="auth:logout">خروج</button>
+            <div class="nav-group nav-group-account" data-group="account">
+              <button class="nav-group-btn" data-action="nav:menu" data-group="account" aria-expanded="false">
+                ${planBadge} <span class="nav-caret">▾</span>
+              </button>
+              <div class="nav-submenu" role="menu">
+                <button data-action="go" data-hash="#/app/profile" ${activeHash === "#/app/profile" ? 'aria-current="page"' : ""}>حساب من</button>
+                <button data-action="auth:logout">خروج</button>
+              </div>
+            </div>
           </div>
           <button class="nav-toggle" data-action="nav:toggle" aria-expanded="false" aria-label="باز کردن منو">☰</button>
         </div>
       </header>
-      <main class="page">${content}</main>`;
+      <main class="page">${content}</main>
+      ${designerCredit()}`;
   }
 
   function publicShell(content, { dark = false } = {}) {
     return `<div class="${dark ? "dark-page" : ""}">${content}</div>`;
+  }
+
+  function designerCredit({ dark = false } = {}) {
+    return `<p class="site-credit${dark ? " is-dark" : ""}">${escapeHtml(PLATFORM.designerRole)}: ${escapeHtml(PLATFORM.designer)}</p>`;
+  }
+
+  function aiStatusCard() {
+    const live = typeof AIRemote !== "undefined" && AIRemote.isEnabled();
+    if (live) {
+      return `
+        <section class="ai-status ai-status-live" role="status">
+          <div class="space-between">
+            <strong>هوش مصنوعی واقعی فعال است</strong>
+            <span class="badge badge-ok">AvalAI روی همین دستگاه</span>
+          </div>
+          <p>همین آدرس را باز نگه دار: <span class="num">http://localhost:8777</span></p>
+          <p class="muted">اگر پنجره سیاه <span class="num">شروع.bat</span> بسته شود، دوباره نسخه نمایشی می‌شود.</p>
+        </section>`;
+    }
+    return `
+      <section class="ai-status ai-status-mock" role="status">
+        <div class="space-between">
+          <strong>الان نسخه نمایشی است</strong>
+          <span class="badge badge-warn">Mock AI</span>
+        </div>
+        <p>برای AI واقعی فقط از سیستم محلی استفاده کن، نه از لینک گیت‌هاب.</p>
+        <ol class="ai-status-steps">
+          <li>فایل <span class="num">شروع.bat</span> را در پوشه پروژه دوبار کلیک کن.</li>
+          <li>فقط این آدرس را باز کن: <span class="num">http://localhost:8777</span></li>
+        </ol>
+      </section>`;
   }
 
   function gate(title, description) {
@@ -288,6 +366,8 @@ const UI = (() => {
     sectionTitle,
     kpi,
     navigate,
+    designerCredit,
+    aiStatusCard,
     COACH_NAV,
   };
 })();

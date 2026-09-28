@@ -8,6 +8,10 @@ const APP = (() => {
     draftPreview: null,
     manual: { title: "جلسه دستی امروز", sets: [] },
     aiBusy: false,
+    cockpitInsights: null,
+    insightsRequested: false,
+    parentReports: {},
+    biomechAi: {},
     studentQuery: "",
     studentGroup: "همه",
     biomechStudent: null,
@@ -128,6 +132,13 @@ const APP = (() => {
     window.addEventListener("hashchange", render);
 
     document.addEventListener("click", (event) => {
+      if (!event.target.closest(".nav-group")) {
+        document.querySelectorAll(".nav-group.is-open").forEach((group) => {
+          group.classList.remove("is-open");
+          const btn = group.querySelector(".nav-group-btn");
+          if (btn) btn.setAttribute("aria-expanded", "false");
+        });
+      }
       const trigger = event.target.closest("[data-action]");
       if (!trigger) return;
       const handler = actions[trigger.dataset.action];
@@ -159,21 +170,21 @@ const APP = (() => {
         ui.biomechResult = null;
         render();
       } else if (node.id === "att-file") {
-        const name = node.files && node.files[0] ? node.files[0].name : "attendance.jpg";
-        runScan("att-scan", `در حال خواندن ${name} ...`, () => {
+        const file = node.files && node.files[0];
+        const name = file ? file.name : "attendance.jpg";
+        runScan("att-scan", `در حال خواندن ${name} ...`, async () => {
+          const result = await AIRemote.ocrAttendance(file, SJ.students());
           SJ.markAll("present");
-          const sheet = SJ.todaySheet();
-          const students = SJ.students();
-          sheet.marks[students[3].id] = "absent";
-          sheet.marks[students[11].id] = "late";
+          result.rows.forEach((row) => SJ.mark(row.id, row.status));
           SJ.save();
-          UI.toast("برگه خوانده شد و ۲۴ نام با پرونده تطبیق یافت.");
+          UI.toast(result.engine === "ai" ? "برگه با AI خوانده شد و با پرونده تطبیق یافت." : "خواندن تصویر ممکن نشد؛ یک نمونه تطبیق شد.");
           render();
         });
       } else if (node.id === "fin-file") {
-        const name = node.files && node.files[0] ? node.files[0].name : "receipt.jpg";
-        runScan("fin-scan", `در حال خواندن رسید ${name} ...`, () => {
-          ui.ocrResult = AI.ocrReceipt(name, SJ.students());
+        const file = node.files && node.files[0];
+        const name = file ? file.name : "receipt.jpg";
+        runScan("fin-scan", `در حال خواندن رسید ${name} ...`, async () => {
+          ui.ocrResult = await AIRemote.ocrReceipt(file, SJ.students());
           render();
         });
       }
@@ -228,6 +239,19 @@ const APP = (() => {
 APP.action("go", (data) => UI.navigate(data.hash));
 APP.action("modal:close", () => UI.closeModal());
 
+APP.action("nav:menu", (data, trigger) => {
+  const current = trigger.closest(".nav-group");
+  if (!current) return;
+  document.querySelectorAll(".nav-group").forEach((group) => {
+    if (group === current) return;
+    group.classList.remove("is-open");
+    const btn = group.querySelector(".nav-group-btn");
+    if (btn) btn.setAttribute("aria-expanded", "false");
+  });
+  const open = current.classList.toggle("is-open");
+  trigger.setAttribute("aria-expanded", open ? "true" : "false");
+});
+
 APP.action("nav:toggle", (_data, trigger) => {
   const bar = document.querySelector(".topbar");
   if (!bar) return;
@@ -272,6 +296,10 @@ APP.action("plan:upgrade", () => {
 
 APP.action("demo:reset", () => {
   SJ.reset();
+  APP.ui.cockpitInsights = null;
+  APP.ui.insightsRequested = false;
+  APP.ui.parentReports = {};
+  APP.ui.biomechAi = {};
   UI.toast("داده‌های دمو بازنشانی شد.");
   UI.navigate("#/");
 });
@@ -330,7 +358,7 @@ APP.action("attendance:save-notes", () => {
   UI.toast("یادداشت جلسه ذخیره شد.");
 });
 
-APP.action("attendance:analyze", () => {
+APP.action("attendance:analyze", async () => {
   const counts = SJ.todayCounts();
   if (!counts.marked) {
     UI.toast("اول وضعیت حضور شاگردان را ثبت کنید.");
@@ -339,8 +367,12 @@ APP.action("attendance:analyze", () => {
   const sheet = SJ.todaySheet();
   const absent = SJ.students().filter((s) => sheet.marks[s.id] === "absent").map((s) => s.name);
   const late = SJ.students().filter((s) => sheet.marks[s.id] === "late").map((s) => s.name);
-  SJ.setAttendanceAnalysis(AI.attendanceInsight(counts, absent, late));
-  UI.toast("تحلیل ساخته و در پرونده شاگردان ثبت شد.");
+  APP.ui.aiBusy = true;
+  APP.render();
+  const insight = await AIRemote.attendanceInsight(counts, absent, late);
+  APP.ui.aiBusy = false;
+  SJ.setAttendanceAnalysis(insight);
+  UI.toast(insight.engine === "ai" ? "تحلیل AI ساخته و ثبت شد." : "سرویس AI در دسترس نبود؛ تحلیل محلی ثبت شد.");
   APP.render();
 });
 
@@ -519,7 +551,7 @@ APP.action("manual:publish", () => {
 
 /* ---------- بیومکانیک ---------- */
 
-APP.action("bio:calc", () => {
+APP.action("bio:calc", async () => {
   const distance = APP.numberFrom(APP.value("bio-distance"));
   const time = APP.numberFrom(APP.value("bio-time"));
   const strokes = APP.numberFrom(APP.value("bio-strokes"));
@@ -528,6 +560,10 @@ APP.action("bio:calc", () => {
     return;
   }
   APP.ui.biomechResult = AI.analyzeSample({ distance, time, strokes });
+  const student = SJ.studentById(APP.ui.biomechStudent || SJ.students()[0].id);
+  APP.ui.biomechAi[student.id] = { loading: true };
+  APP.render();
+  APP.ui.biomechAi[student.id] = await AIRemote.biomechExplain(student);
   APP.render();
 });
 
@@ -594,9 +630,11 @@ APP.action("payment:add", (data) => {
 
 /* ---------- کارنامه و پورتال اولیا ---------- */
 
-APP.action("report:preview", (data) => {
+APP.action("report:preview", async (data) => {
   const student = SJ.studentById(data.id);
-  const report = AI.parentReport(student);
+  UI.modal(`کارنامه ${student.name}`, `<p class="muted">در حال نوشتن کارنامه با AI…</p>`);
+  const report = await AIRemote.parentReport(student);
+  APP.ui.parentReports[student.id] = report;
   UI.modal(
     `کارنامه ${student.name}`,
     `<div class="ai-box">${report.paragraphs.map((p) => `<p>${UI.escapeHtml(p)}</p>`).join("")}</div>

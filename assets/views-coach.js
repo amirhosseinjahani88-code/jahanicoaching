@@ -6,7 +6,14 @@ const CoachViews = (() => {
   function cockpit() {
     const counts = SJ.todayCounts();
     const finance = SJ.financeSummary();
-    const insights = AI.cockpitInsights();
+    if (AIRemote.isEnabled() && !APP.ui.insightsRequested) {
+      APP.ui.insightsRequested = true;
+      AIRemote.cockpitInsights().then((items) => {
+        APP.ui.cockpitInsights = items;
+        APP.render();
+      });
+    }
+    const insights = APP.ui.cockpitInsights || AI.cockpitInsights();
     const published = SJ.latestPublished();
     const pro = SJ.isPro();
 
@@ -17,6 +24,7 @@ const CoachViews = (() => {
             <span class="eyebrow">${TODAY_LABEL}</span>
             <h1 class="title-xl">سلام مربی ${UI.escapeHtml(SJ.raw.coach.firstName)} ${UI.escapeHtml(SJ.raw.coach.lastName)}</h1>
             <p class="muted">${pro ? "کاکپیت مستری پرو" : "داشبورد پلن اسنشیال"} • ${UI.escapeHtml(SJ.raw.coach.pool)}</p>
+            <p class="muted">${PLATFORM.designerRole}: ${PLATFORM.designer}</p>
           </div>
           <button class="card-gradient stack plan-chip" data-action="go" data-hash="#/app/profile">
             <span style="opacity:.85">اشتراک فعال</span>
@@ -24,6 +32,8 @@ const CoachViews = (() => {
             <span style="opacity:.85">${pro ? PLANS.pro.priceLabel : PLANS.essential.priceLabel}</span>
           </button>
         </div>
+
+        ${UI.aiStatusCard()}
 
         <div class="grid">
           ${UI.kpi("شاگردان فعال", `${UI.fa(SJ.students().length)} شناگر`, "ورود به پرونده شاگردان", "", "#/app/students")}
@@ -197,7 +207,9 @@ const CoachViews = (() => {
 
             <section class="card stack">
               <h2 class="title-md">تحلیل با AI</h2>
-              <button class="btn-primary btn-block" data-action="attendance:analyze">تحلیل با AI و ثبت خودکار در پرونده شاگردان</button>
+              <button class="btn-primary btn-block" data-action="attendance:analyze" ${APP.ui.aiBusy ? "disabled" : ""}>
+                ${APP.ui.aiBusy ? "در حال تحلیل…" : "تحلیل با AI و ثبت خودکار در پرونده شاگردان"}
+              </button>
               ${
                 sheet.analysis
                   ? `<div class="ai-box">
@@ -283,7 +295,15 @@ const CoachViews = (() => {
     const rate = SJ.attendanceRate(student.id);
     const samples = SJ.biomech(student.id);
     const analyzed = samples.map((s) => AI.analyzeSample({ distance: s.distance, time: s.time, strokes: s.strokes }));
-    const verdict = AI.biomechVerdict(samples, student.stroke);
+    if (AIRemote.isEnabled() && !APP.ui.biomechAi[student.id]) {
+      APP.ui.biomechAi[student.id] = { loading: true };
+      AIRemote.biomechExplain(student).then((verdict) => {
+        APP.ui.biomechAi[student.id] = verdict;
+        APP.render();
+      });
+    }
+    const cachedBio = APP.ui.biomechAi[student.id];
+    const verdict = cachedBio && !cachedBio.loading ? cachedBio : AI.biomechVerdict(samples, student.stroke);
     const portalLink = `${window.location.origin}${window.location.pathname}#/s/${student.id}/${SJ.studentToken(student.id)}`;
 
     const body = `
@@ -662,7 +682,15 @@ const CoachViews = (() => {
     const student = SJ.studentById(studentId);
     const samples = SJ.biomech(studentId);
     const analyzed = samples.map((s) => AI.analyzeSample({ distance: s.distance, time: s.time, strokes: s.strokes }));
-    const verdict = AI.biomechVerdict(samples, student.stroke);
+    if (AIRemote.isEnabled() && !APP.ui.biomechAi[student.id]) {
+      APP.ui.biomechAi[student.id] = { loading: true };
+      AIRemote.biomechExplain(student).then((verdict) => {
+        APP.ui.biomechAi[student.id] = verdict;
+        APP.render();
+      });
+    }
+    const cachedBio = APP.ui.biomechAi[student.id];
+    const verdict = cachedBio && !cachedBio.loading ? cachedBio : AI.biomechVerdict(samples, student.stroke);
     const result = APP.ui.biomechResult;
 
     const body = `
@@ -895,6 +923,7 @@ const CoachViews = (() => {
     const body = `
       <div class="stack-lg">
         ${UI.sectionTitle("حساب من", "اطلاعات مربی، پلن و مدیریت داده‌های دمو.", "#/app")}
+        ${UI.aiStatusCard()}
         <div class="two-col">
           <section class="card stack">
             <div class="row">
@@ -905,6 +934,7 @@ const CoachViews = (() => {
               </div>
             </div>
             <span class="badge badge-blue">${UI.escapeHtml(coach.credential)}</span>
+            <div class="ledger-row"><span>${PLATFORM.designerRole}</span><span>${PLATFORM.designer}</span></div>
             <div class="ledger-row"><span>استخر</span><span>${UI.escapeHtml(coach.pool)}</span></div>
             <div class="ledger-row"><span>عضویت از</span><span>${UI.escapeHtml(coach.since)}</span></div>
             <div class="ledger-row"><span>شاگردان</span><span class="num">${UI.fa(SJ.students().length)}</span></div>

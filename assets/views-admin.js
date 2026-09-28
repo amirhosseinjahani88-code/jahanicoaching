@@ -12,7 +12,7 @@ const AdminViews = (() => {
         <div class="topbar-inner">
           <div class="brand" style="color:#fff">
             <span class="brand-mark" style="background:#fff;color:#0b192c">⚙️</span>
-            <span>مستر کنترل</span>
+            <span>${PLATFORM.name}</span>
           </div>
           <nav class="nav nav-dark" aria-label="صفحات مدیریت">
             ${tabs
@@ -27,7 +27,8 @@ const AdminViews = (() => {
           <button class="nav-toggle nav-toggle-dark" data-action="nav:toggle" aria-expanded="false" aria-label="باز کردن منو">☰</button>
         </div>
       </header>
-      <main class="page">${content}</main>`;
+      <main class="page">${content}</main>
+      ${UI.designerCredit()}`;
   }
 
   function metrics() {

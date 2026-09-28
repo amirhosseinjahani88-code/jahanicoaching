@@ -1,4 +1,4 @@
-﻿# سرور محلی «شنا جهانی» + پروکسی هوش مصنوعی.
+﻿# سرور محلی «کوچینگ جهانی» + پروکسی هوش مصنوعی.
 # اجرا: در PowerShell دستور  .\serve.ps1  را بزنید و بعد آدرس http://localhost:8777 را باز کنید.
 #
 # کلید هوش مصنوعی از فایل ai-key.local.txt (خارج از گیت) یا متغیر محیطی AVALAI_API_KEY خوانده می‌شود.
@@ -69,27 +69,74 @@ function Write-Json($context, $object, [int]$status = 200) {
   $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
 }
 
-function Invoke-AvalAI([string]$brief) {
+function Invoke-AvalAIChat([string]$system, [string]$user, [string]$image) {
+  $userMessage = @{ role = "user"; content = $user }
+  if ($image -and $image.StartsWith("data:")) {
+    $userMessage = @{
+      role    = "user"
+      content = @(
+        @{ type = "text"; text = $user },
+        @{ type = "image_url"; image_url = @{ url = $image } }
+      )
+    }
+  }
+
   $payload = @{
     model       = $model
-    temperature = 0.6
-    max_tokens  = 1600
+    temperature = 0.5
+    max_tokens  = 1800
     messages    = @(
-      @{ role = "system"; content = $systemPrompt },
-      @{ role = "user"; content = $brief }
+      @{ role = "system"; content = $system },
+      $userMessage
     )
-  } | ConvertTo-Json -Depth 8
+  } | ConvertTo-Json -Depth 12 -Compress
 
   $response = Invoke-WebRequest -Uri "$baseUrl/chat/completions" `
     -Method Post `
     -Headers @{ Authorization = "Bearer $apiKey" } `
     -ContentType "application/json; charset=utf-8" `
     -Body ([System.Text.Encoding]::UTF8.GetBytes($payload)) `
-    -TimeoutSec 60 `
+    -TimeoutSec 90 `
     -UseBasicParsing
 
   $text = [System.Text.Encoding]::UTF8.GetString($response.RawContentStream.ToArray())
   return $text | ConvertFrom-Json
+}
+
+function Invoke-AvalAI([string]$brief) {
+  return Invoke-AvalAIChat $systemPrompt $brief ""
+}
+
+function Handle-AiProxy($context) {
+  if ($context.Request.HttpMethod -ne "POST") {
+    Write-Json $context @{ error = "method_not_allowed" } 405
+    return
+  }
+  if (-not $apiKey) {
+    Write-Json $context @{ error = "no_key"; message = "کلید هوش مصنوعی روی این دستگاه تنظیم نشده است." } 503
+    return
+  }
+
+  $reader = [System.IO.StreamReader]::new($context.Request.InputStream, [System.Text.Encoding]::UTF8)
+  $bodyText = $reader.ReadToEnd()
+  $reader.Close()
+  $body = $bodyText | ConvertFrom-Json
+  $system = [string]$body.system
+  $user = [string]$body.user
+  $image = [string]$body.image
+  if (-not $system) { $system = $systemPrompt }
+  if (-not $user -or $user.Trim().Length -lt 2) {
+    Write-Json $context @{ error = "bad_request"; message = "متن درخواست خیلی کوتاه است." } 400
+    return
+  }
+  if ($user.Length -gt 8000) { $user = $user.Substring(0, 8000) }
+  if ($image -and $image.Length -gt 3500000) { $image = "" }
+
+  Write-Host "  → درخواست AI ($($user.Length) نویسه)" -ForegroundColor Cyan
+  $result = Invoke-AvalAIChat $system $user $image
+  $content = $result.choices[0].message.content
+  Write-Json $context @{ content = $content; model = $result.model }
+  Write-Host "  ← پاسخ مدل دریافت شد." -ForegroundColor Green
 }
 
 $listener = [System.Net.HttpListener]::new()
@@ -97,7 +144,7 @@ $listener.Prefixes.Add($prefix)
 $listener.Start()
 
 Write-Host ""
-Write-Host "  Swim Jahani روی $prefix اجرا شد."
+Write-Host "  jahanicoaching روی $prefix اجرا شد."
 Write-Host "  برای خاموش کردن، این پنجره را ببندید یا Ctrl+C بزنید."
 Write-Host ""
 if ($apiKey) {
@@ -118,6 +165,17 @@ try {
     $path = $request.Url.LocalPath.TrimStart('/')
 
     # ---------- پروکسی هوش مصنوعی ----------
+    if ($request.Url.LocalPath -eq "/api/ai") {
+      try {
+        Handle-AiProxy $context
+      } catch {
+        Write-Host "  ! خطا در تماس با سرویس: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Json $context @{ error = "upstream"; message = $_.Exception.Message } 502
+      }
+      $context.Response.OutputStream.Close()
+      continue
+    }
+
     if ($request.Url.LocalPath -eq "/api/workout") {
       if ($request.HttpMethod -ne "POST") {
         Write-Json $context @{ error = "method_not_allowed" } 405
