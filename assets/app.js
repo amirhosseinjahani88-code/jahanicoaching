@@ -52,9 +52,25 @@ const APP = (() => {
     if (hash === "#/" || hash === "#") return PublicViews.landing();
     if (hash === "#/pricing") return PublicViews.pricing();
     if (hash === "#/checkout" || hash.startsWith("#/checkout/")) {
-      return PublicViews.checkout(parts[1] === "essential" ? "essential" : "pro");
+      if (!SJ.isLoggedIn()) {
+        UI.navigate("#/auth");
+        return PublicViews.login();
+      }
+      const selected = parts[1] === "essential" ? "essential" : "pro";
+      if (SJ.hasPurchased() && SJ.plan() === selected) {
+        UI.navigate("#/app");
+        return CoachViews.cockpit();
+      }
+      return PublicViews.checkout(selected);
     }
-    if (hash === "#/auth") return PublicViews.auth();
+    if (hash === "#/auth/signup") {
+      if (SJ.hasAccount()) {
+        UI.navigate("#/auth");
+        return PublicViews.login();
+      }
+      return PublicViews.signup();
+    }
+    if (hash === "#/auth") return PublicViews.login();
     if (hash === "#/admin-login") return PublicViews.adminLogin();
 
     if (hash.startsWith("#/admin")) {
@@ -70,7 +86,11 @@ const APP = (() => {
     if (hash.startsWith("#/app")) {
       if (!SJ.isLoggedIn()) {
         UI.navigate("#/auth");
-        return PublicViews.auth();
+        return PublicViews.login();
+      }
+      if (!SJ.hasPurchased()) {
+        UI.navigate("#/pricing");
+        return PublicViews.pricing();
       }
       if (hash.startsWith("#/app/student/")) return CoachViews.student360(parts[2]);
       if (hash === "#/app/attendance") return CoachViews.attendance();
@@ -194,15 +214,36 @@ const APP = (() => {
     });
 
     document.addEventListener("submit", (event) => {
-      if (event.target.id !== "auth-form") return;
+      if (event.target.id !== "login-form") return;
       event.preventDefault();
-      const firstName = value("auth-first").trim();
-      const lastName = value("auth-last").trim();
-      const phone = toEnglishDigits(value("auth-phone")).trim();
-      const plan = value("auth-plan", "pro");
-      const terms = document.getElementById("auth-terms").checked;
-      const errorBox = document.getElementById("auth-error");
+      const phone = toEnglishDigits(value("login-phone")).trim();
+      const errorBox = document.getElementById("login-error");
+      if (!/^09\d{9}$/.test(phone)) {
+        errorBox.textContent = "شماره همراه باید ۱۱ رقم و با ۰۹ شروع شود.";
+        return;
+      }
+      if (!SJ.login(phone)) {
+        errorBox.textContent = "این شماره ثبت نشده است.";
+        return;
+      }
+      if (SJ.hasPurchased()) {
+        const title = SJ.plan() === "pro" ? "مستری پرو" : "اقتصادی";
+        UI.toast(`پلن ${title} شناسایی شد.`);
+        UI.navigate("#/app");
+        return;
+      }
+      UI.toast("هنوز پلنی نخریده‌اید.");
+      UI.navigate("#/pricing");
+    });
 
+    document.addEventListener("submit", (event) => {
+      if (event.target.id !== "signup-form") return;
+      event.preventDefault();
+      const firstName = value("signup-first").trim();
+      const lastName = value("signup-last").trim();
+      const phone = toEnglishDigits(value("signup-phone")).trim();
+      const terms = document.getElementById("signup-terms").checked;
+      const errorBox = document.getElementById("signup-error");
       if (!firstName || !lastName) {
         errorBox.textContent = "نام و نام خانوادگی را کامل وارد کنید.";
         return;
@@ -215,8 +256,9 @@ const APP = (() => {
         errorBox.textContent = "برای ادامه، پذیرش قوانین لازم است.";
         return;
       }
-      ui.checkoutDraft = { firstName, lastName, phone };
-      UI.navigate(plan === "essential" ? "#/checkout/essential" : "#/checkout/pro");
+      SJ.signup({ firstName, lastName, phone });
+      UI.toast("ثبت‌نام شد. یک پلن انتخاب کنید.");
+      UI.navigate("#/pricing");
     });
 
     document.addEventListener("submit", (event) => {
@@ -224,30 +266,11 @@ const APP = (() => {
       event.preventDefault();
       const errorBox = document.getElementById("checkout-error");
       const plan = value("checkout-plan") === "essential" ? "essential" : "pro";
-      if (SJ.isLoggedIn()) {
-        SJ.setPlan(plan);
-        ui.checkoutDraft = null;
-        UI.toast("خرید فرضی ثبت شد. وارد پنل شدید.");
-        UI.navigate("#/app");
+      if (!SJ.isLoggedIn()) {
+        UI.navigate("#/auth");
         return;
       }
-      const firstName = value("checkout-first").trim();
-      const lastName = value("checkout-last").trim();
-      const phone = toEnglishDigits(value("checkout-phone")).trim();
-      const terms = document.getElementById("checkout-terms").checked;
-      if (!firstName || !lastName) {
-        errorBox.textContent = "نام و نام خانوادگی را کامل وارد کنید.";
-        return;
-      }
-      if (!/^09\d{9}$/.test(phone)) {
-        errorBox.textContent = "شماره همراه باید ۱۱ رقم و با ۰۹ شروع شود.";
-        return;
-      }
-      if (!terms) {
-        errorBox.textContent = "برای خرید، پذیرش قوانین لازم است.";
-        return;
-      }
-      SJ.signup({ firstName, lastName, phone, plan });
+      SJ.setPlan(plan);
       ui.checkoutDraft = null;
       UI.toast("خرید فرضی ثبت شد. وارد پنل شدید.");
       UI.navigate("#/app");
@@ -310,9 +333,25 @@ APP.action("admin:login", () => {
   UI.navigate("#/admin");
 });
 
+APP.action("auth:enter", () => {
+  if (SJ.isLoggedIn() && SJ.hasPurchased()) {
+    UI.navigate("#/app");
+    return;
+  }
+  if (SJ.isLoggedIn()) {
+    UI.navigate("#/pricing");
+    return;
+  }
+  UI.navigate("#/auth");
+});
+
 APP.action("plan:choose", (data) => {
   const plan = data.plan === "essential" ? "essential" : "pro";
-  if (SJ.isLoggedIn() && SJ.plan() === plan) {
+  if (!SJ.isLoggedIn()) {
+    UI.navigate("#/auth");
+    return;
+  }
+  if (SJ.hasPurchased() && SJ.plan() === plan) {
     UI.toast(plan === "pro" ? "پلن مستری پرو همین حالا فعال است." : "پلن اقتصادی همین حالا فعال است.");
     UI.navigate("#/app");
     return;

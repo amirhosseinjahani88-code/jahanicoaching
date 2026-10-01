@@ -698,6 +698,27 @@ textarea:focus {
   align-items: start;
 }
 
+.landing-block {
+  min-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.9rem;
+  padding: 3.5rem 0;
+}
+
+.landing-kicker {
+  color: #67e8f9;
+  font-weight: 800;
+}
+
+.landing-lead {
+  max-width: 28rem;
+  font-size: 1.2rem;
+  line-height: 1.8;
+  margin: 0;
+}
+
 .hero-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1227,6 +1248,11 @@ button.plan-chip {
 @media (max-width: 640px) {
   body {
     font-size: 15px;
+  }
+
+  .landing-block {
+    min-height: 70vh;
+    padding: 2.5rem 0;
   }
 
   .page {

@@ -99,6 +99,9 @@ const SJ = (() => {
       if (!Array.isArray(parsed.workouts) || parsed.workouts.length === 0) {
         parsed.workouts = SAMPLE_WORKOUTS.map((w, i) => ({ ...w, id: i + 1 }));
       }
+      if (parsed.coach && parsed.coach.plan && parsed.coach.purchased == null) {
+        parsed.coach.purchased = true;
+      }
       return parsed;
     } catch (err) {
       return freshState();
@@ -120,19 +123,43 @@ const SJ = (() => {
 
   /* ---------- احراز هویت و نقش ---------- */
 
+  function normalizePhone(phone) {
+    return String(phone || "")
+      .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+      .replace(/\D/g, "");
+  }
+
   function signup({ firstName, lastName, phone, plan }) {
+    const bought = plan === "pro" || plan === "essential";
     state.coach = {
       id: "c1",
       firstName,
       lastName,
-      phone,
-      plan: plan || "essential",
+      phone: normalizePhone(phone),
+      plan: bought ? plan : null,
+      purchased: bought,
       since: "۱۴۰۴/۰۶",
       pool: "استخر قدس",
       credential: "مورد تایید اساتید تراز اول شنا",
     };
     state.session = { role: "coach", ghostFrom: null };
     save();
+  }
+
+  function hasAccount() {
+    return !!(state.coach && state.coach.phone);
+  }
+
+  function hasPurchased() {
+    return !!(state.coach && state.coach.purchased && (state.coach.plan === "pro" || state.coach.plan === "essential"));
+  }
+
+  function login(phone) {
+    if (!hasAccount()) return false;
+    if (normalizePhone(phone) !== normalizePhone(state.coach.phone)) return false;
+    state.session = { role: "coach", ghostFrom: null };
+    save();
+    return true;
   }
 
   function loginAdmin() {
@@ -158,7 +185,8 @@ const SJ = (() => {
   }
 
   function plan() {
-    return state.coach ? state.coach.plan : "essential";
+    if (!state.coach || !state.coach.plan) return null;
+    return state.coach.plan;
   }
 
   function isPro() {
@@ -168,6 +196,7 @@ const SJ = (() => {
   function setPlan(next) {
     if (!state.coach) return;
     state.coach.plan = next;
+    state.coach.purchased = true;
     save();
   }
 
@@ -187,6 +216,7 @@ const SJ = (() => {
       lastName: rest.join(" "),
       phone: "—",
       plan: target.plan,
+      purchased: true,
       since: target.since,
       pool: target.pool,
       credential: "حساب مربی (ورود مدیریتی)",
@@ -418,6 +448,9 @@ const SJ = (() => {
     save,
     reset,
     signup,
+    login,
+    hasAccount,
+    hasPurchased,
     loginAdmin,
     logout,
     isLoggedIn,

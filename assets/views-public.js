@@ -5,9 +5,17 @@ const PublicViews = (() => {
 
   function landing() {
     const demo = APP.demoWorkout;
+    const story = [
+      ...VALUE_PILLARS.map((item) => ({ kicker: "ارزش", title: item.title, text: item.text })),
+      ...PAIN_POINTS.map((item) => ({ kicker: "مسئله", title: item.title, text: item.text, badge: item.fix })),
+      { kicker: "پلن", title: "پلن اقتصادی", text: "شاگرد، حضور و تمرین دستی." },
+      { kicker: "پلن", title: "پلن مستری پرو", text: "تحلیل، مالی و آرشیو." },
+      { kicker: "دسترسی", title: "پورتال اولیا", text: "رکورد، حضور و شهریه." },
+      ...ROADMAP.map((item) => ({ kicker: item.phase, title: item.title, text: item.text })),
+    ];
     return UI.publicShell(`
       <div class="dark-page">
-        <div class="page stack-lg">
+        <div class="page">
           <header class="site-header">
             <div class="brand" style="color:#fff">
               <span class="brand-mark">🏊</span>
@@ -15,140 +23,69 @@ const PublicViews = (() => {
             </div>
             <div class="row site-header-actions">
               <button class="btn-ghost btn-sm" data-action="go" data-hash="#/pricing">تعرفه‌ها</button>
-              <button class="btn-white btn-sm" data-action="go" data-hash="#/auth">ورود / ثبت‌نام مربیان</button>
+              <button class="btn-white btn-sm" data-action="auth:enter">ورود</button>
             </div>
           </header>
 
-          <section class="hero">
-            <div class="stack">
-              <div class="row">
-                <span class="badge badge-cyan">✓ تأییدیه اساتید تراز اول</span>
-                <span class="badge badge-light">بدون نیاز به نصب نرم‌افزار</span>
-                <span class="badge badge-light">${PLATFORM.designerRole}: ${PLATFORM.designer}</span>
-              </div>
-              <h1 class="title-xl" style="color:#fff">سامانه هوشمند مربیگری و تحلیل شنا؛ مبتنی بر متدولوژی جهانی و استانداردهای World Aquatics</h1>
-              <p class="on-dark-muted" style="font-size:1.1rem;line-height:1.9">
-                ${PLATFORM.tagline}. از تمرین‌نویسی با ویس تا آنالیز عددی بیومکانیک و شفافیت مالی با اولیا —
-                زمان اداری مربی ۸۰ درصد کم می‌شود و حفظ شناگر درآمد او را تا ۴۰ درصد بالا می‌برد.
-              </p>
-              <div class="row hero-cta">
-                <button class="btn-primary" data-action="go" data-hash="#/auth">شروع رایگان دمو</button>
-                <button class="btn-ghost" data-action="go" data-hash="#/pricing">مشاهده پلن‌ها و تعرفه‌ها</button>
-              </div>
-              <div class="hero-metrics">
-                ${IMPACT_METRICS.map(
-                  (m) => `<div><div class="title-lg" style="color:#67e8f9">${m.value}</div><div class="on-dark-muted">${m.label}</div></div>`
-                ).join("")}
-              </div>
+          <section class="landing-block">
+            <span class="badge badge-cyan">${PLATFORM.designerRole}: ${PLATFORM.designer}</span>
+            <h1 class="title-xl" style="color:#fff">مربیگری شنا، بدون کاغذ.</h1>
+            <p class="landing-lead on-dark-muted">تمرین، تحلیل و شهریه در یک جا.</p>
+            <div class="row hero-cta">
+              <button class="btn-primary" data-action="auth:enter">ورود</button>
             </div>
+            <div class="hero-metrics">
+              ${IMPACT_METRICS.map(
+                (m) => `<div><div class="title-lg" style="color:#67e8f9">${m.value}</div><div class="on-dark-muted">${m.label}</div></div>`
+              ).join("")}
+            </div>
+          </section>
 
-            <div class="card-glass stack" id="demo-box">
-              <div class="space-between">
-                <h2 class="title-md" style="color:#fff">دموی تعاملی — بدون ثبت‌نام</h2>
-                <span class="badge badge-cyan">${AIRemote.isEnabled() ? "AI واقعی" : "Mock AI"}</span>
-              </div>
-              <p class="on-dark-muted">یک جمله بگویید، جلسه ساختاریافته بگیرید.</p>
-              ${
-                AIRemote.isEnabled()
-                  ? `<p class="on-dark-muted">برای AI واقعی همین آدرس را باز نگه دار: <span class="num">http://localhost:8777</span></p>`
-                  : `<p class="on-dark-muted">برای AI واقعی فایل <span class="num">شروع.bat</span> را بزن و فقط <span class="num">http://localhost:8777</span> را باز کن.</p>`
-              }
+          <section class="landing-block" id="demo-box">
+            <span class="landing-kicker">نمونه</span>
+            <h2 class="title-lg" style="color:#fff">یک جمله، یک جلسه.</h2>
+            <div class="card-glass stack">
               <label class="field">
                 <span style="color:#e2e8f0">درخواست تمرین</span>
-                <textarea id="demo-brief" rows="3" placeholder="مثلاً: برای نوجوانان رقابتی یک جلسه ۷۵ دقیقه‌ای کرال سینه با تمرکز روی سرعت بنویس">${UI.escapeHtml(APP.demoBrief || AI.voice.samples[0])}</textarea>
+                <textarea id="demo-brief" rows="3" placeholder="مثلاً: جلسه سرعت کرال سینه">${UI.escapeHtml(APP.demoBrief || AI.voice.samples[0])}</textarea>
               </label>
               <div class="row">
                 <button class="btn-primary" data-action="demo:generate" ${APP.ui.aiBusy ? "disabled" : ""}>
-                  ${APP.ui.aiBusy ? "در حال ساخت جلسه…" : "تولید جلسه با AI"}
+                  ${APP.ui.aiBusy ? "در حال ساخت…" : "ساخت جلسه"}
                 </button>
-                <button class="btn-ghost btn-sm" data-action="demo:sample" ${APP.ui.aiBusy ? "disabled" : ""}>یک نمونه دیگر</button>
+                <button class="btn-ghost btn-sm" data-action="demo:sample" ${APP.ui.aiBusy ? "disabled" : ""}>نمونه دیگر</button>
               </div>
               ${
                 demo
                   ? `<div class="demo-output stack">
-                      <div class="space-between">
-                        <strong style="color:#fff">${UI.escapeHtml(demo.title)}</strong>
-                        <span class="badge badge-light">${UI.fa(demo.meters)} متر</span>
-                      </div>
+                      <strong style="color:#fff">${UI.escapeHtml(demo.title)}</strong>
                       ${demo.sets
-                        .map(
-                          (s) => `<div class="demo-row"><span>${UI.escapeHtml(s.phase)}</span><span>${UI.escapeHtml(s.detail)}</span></div>`
-                        )
+                        .map((s) => `<div class="demo-row"><span>${UI.escapeHtml(s.phase)}</span><span>${UI.escapeHtml(s.detail)}</span></div>`)
                         .join("")}
-                      <p class="on-dark-muted" style="font-size:.95rem">💡 ${UI.escapeHtml(demo.coachTip)}</p>
-                      <button class="btn-white btn-sm" data-action="go" data-hash="#/auth">ذخیره این جلسه در پنل من</button>
+                      <button class="btn-white btn-sm" data-action="auth:enter">ذخیره در پنل</button>
                     </div>`
-                  : `<p class="on-dark-muted" style="font-size:.95rem">خروجی نمونه شامل گرم‌کردن، تکنیک، ست اصلی با ریت هدف، ست پا و سردکردن است.</p>`
+                  : ""
               }
             </div>
           </section>
 
-          <section class="stack">
-            <h2 class="title-lg" style="color:#fff">سه ستون ارزش پلتفرم</h2>
-            <div class="grid">
-              ${VALUE_PILLARS.map(
-                (p) => `
-                <div class="card-glass stack" style="gap:.5rem">
-                  <span style="font-size:1.8rem">${p.icon}</span>
-                  <strong style="color:#fff;font-size:1.1rem">${p.title}</strong>
-                  <p class="on-dark-muted">${p.text}</p>
-                </div>`
-              ).join("")}
-            </div>
-          </section>
+          ${story
+            .map(
+              (item) => `
+            <section class="landing-block">
+              <span class="landing-kicker">${item.kicker}</span>
+              <h2 class="title-lg" style="color:#fff">${item.title}</h2>
+              <p class="landing-lead on-dark-muted">${item.text}</p>
+              ${item.badge ? `<span class="badge badge-cyan">${item.badge}</span>` : ""}
+            </section>`
+            )
+            .join("")}
 
-          <section class="stack">
-            <h2 class="title-lg" style="color:#fff">چالش امروز مربیان و پاسخ پلتفرم</h2>
-            <div class="grid">
-              ${PAIN_POINTS.map(
-                (p) => `
-                <div class="card-glass stack" style="gap:.5rem">
-                  <strong style="color:#fff">${p.title}</strong>
-                  <p class="on-dark-muted" style="font-size:.95rem">${p.text}</p>
-                  <span class="badge badge-cyan">پاسخ: ${p.fix}</span>
-                </div>`
-              ).join("")}
-            </div>
-          </section>
-
-          <section class="stack">
-            <h2 class="title-lg" style="color:#fff">ساختار دسترسی‌ها</h2>
-            <div class="grid">
-              ${[
-                { title: "پلن اقتصادی", text: "داشبورد، شاگردان، طراح تمرین دستی، حضور و غیاب، پیش‌نمایش گزارش" },
-                { title: "پلن مستری پرو", text: "کاکپیت، پروفایل ۳۶۰، AI Workout، دستیار مالی، آنالیز ریت، آرشیو متدولوژی" },
-                { title: "پنل مستر کنترل", text: "داشبورد هوش تجاری، دایرکتوری مربیان با Ghost Login، CMS متدولوژی" },
-                { title: "پورتال مستقل اولیا", text: "گزارش پیشرفت، رکوردها، نمودار ریت، حضور و وضعیت تسویه" },
-              ]
-                .map(
-                  (b) => `<div class="card-glass stack" style="gap:.4rem"><strong style="color:#fff">${b.title}</strong><p class="on-dark-muted" style="font-size:.95rem">${b.text}</p></div>`
-                )
-                .join("")}
-            </div>
-          </section>
-
-          <section class="stack">
-            <h2 class="title-lg" style="color:#fff">نقشه راه</h2>
-            <div class="grid">
-              ${ROADMAP.map(
-                (r) => `
-                <div class="card-glass stack" style="gap:.4rem">
-                  <div class="row" style="gap:.5rem">
-                    <span class="badge ${r.state === "done" ? "badge-cyan" : "badge-light"}">${r.phase}</span>
-                    ${r.state === "done" ? '<span class="on-dark-muted" style="font-size:.9rem">در حال اجرا در این دمو</span>' : ""}
-                  </div>
-                  <strong style="color:#fff">${r.title}</strong>
-                  <p class="on-dark-muted" style="font-size:.95rem">${r.text}</p>
-                </div>`
-              ).join("")}
-            </div>
-          </section>
-
-          <footer class="stack" style="gap:.5rem;padding-top:1rem">
+          <footer class="stack" style="gap:.5rem;padding:2rem 0 1rem">
             <div class="divider" style="background:rgba(255,255,255,.15)"></div>
             <div class="space-between">
-              <span class="on-dark-muted">${PLATFORM.latinName} — ${PLATFORM.vision}</span>
-              <button class="btn-quiet" style="color:#94a3b8" data-action="go" data-hash="#/admin-login">ورود مدیر پلتفرم (دمو)</button>
+              <span class="on-dark-muted">${PLATFORM.latinName}</span>
+              <button class="btn-quiet" style="color:#94a3b8" data-action="go" data-hash="#/admin-login">ورود مدیر</button>
             </div>
             ${UI.designerCredit({ dark: true })}
           </footer>
@@ -163,9 +100,9 @@ const PublicViews = (() => {
     return `
       <main class="page stack-lg">
         ${UI.sectionTitle(
-          "پلن مناسب برای سطح مربیگری شما",
-          "از ثبت داده‌های روزانه تا تحلیل حرفه‌ای عملکرد شناگران.",
-          loggedIn ? "#/app" : "#/"
+          "انتخاب پلن",
+          loggedIn && !SJ.hasPurchased() ? "هنوز خریدی ثبت نشده." : "یک پلن را انتخاب کنید.",
+          loggedIn && SJ.hasPurchased() ? "#/app" : "#/"
         )}
         <div class="grid">
           ${[PLANS.essential, PLANS.pro]
@@ -181,7 +118,7 @@ const PublicViews = (() => {
                 ${plan.locked.map((f) => `<li class="muted">🔒 ${f}</li>`).join("")}
               </ul>
               <button class="${plan.id === "pro" ? "btn-primary" : "btn-white"} btn-block" data-action="plan:choose" data-plan="${plan.id}">
-                ${loggedIn && SJ.plan() === plan.id ? "پلن فعال شما" : "انتخاب و رفتن به سبد خرید"}
+                ${loggedIn && SJ.hasPurchased() && SJ.plan() === plan.id ? "پلن فعال شما" : "انتخاب و رفتن به سبد خرید"}
               </button>
             </div>`
             )
@@ -208,50 +145,63 @@ const PublicViews = (() => {
 
   /* ---------- ورود و ثبت‌نام ---------- */
 
-  function auth() {
+  function login() {
+    const known = SJ.hasAccount();
+    const phone = known ? SJ.raw.coach.phone : "";
     return UI.publicShell(`
       <div class="dark-page">
         <div class="page auth-layout">
           <div class="stack">
-            <button class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/">→ بازگشت به لندینگ</button>
-            <h1 class="title-xl" style="color:#fff">ورود به پنل حرفه‌ای مربیان</h1>
-            <p class="on-dark-muted">${PLATFORM.designerRole}: ${PLATFORM.designer}</p>
-            <p class="on-dark-muted">اطلاعات شما در این دمو فقط روی همین مرورگر ذخیره می‌شود.</p>
-            <ul class="plan-list on-dark-muted">
-              <li>پرونده ۳۶۰ درجه برای هر شناگر</li>
-              <li>تمرین‌نویسی با متن و ویس</li>
-              <li>پورتال اختصاصی اولیا</li>
-            </ul>
+            <button class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/">→ بازگشت</button>
+            <h1 class="title-xl" style="color:#fff">ورود</h1>
+            <p class="on-dark-muted">اگر پلن خریده باشید، همان پلن باز می‌شود.</p>
           </div>
-          <form class="card-glass stack" id="auth-form">
-            <h2 class="title-md" style="color:#fff">ثبت‌نام مربی</h2>
+          <form class="card-glass stack" id="login-form">
+            <h2 class="title-md" style="color:#fff">شماره همراه</h2>
+            <label class="field">
+              <span style="color:#e2e8f0">شماره</span>
+              <input id="login-phone" value="${UI.escapeHtml(phone)}" inputmode="numeric" required />
+            </label>
+            <div id="login-error" class="field-error"></div>
+            <button type="submit" class="btn-primary btn-block">ورود</button>
+            ${
+              known
+                ? ""
+                : `<button type="button" class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/auth/signup">ثبت‌نام</button>`
+            }
+          </form>
+        </div>
+      </div>`);
+  }
+
+  function signup() {
+    return UI.publicShell(`
+      <div class="dark-page">
+        <div class="page auth-layout">
+          <div class="stack">
+            <button class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/auth">→ بازگشت به ورود</button>
+            <h1 class="title-xl" style="color:#fff">ثبت‌نام</h1>
+            <p class="on-dark-muted">بعد از ثبت‌نام، پلن‌ها را می‌بینید.</p>
+          </div>
+          <form class="card-glass stack" id="signup-form">
             <label class="field">
               <span style="color:#e2e8f0">نام</span>
-              <input id="auth-first" value="امیرحسین" required />
+              <input id="signup-first" value="امیرحسین" required />
             </label>
             <label class="field">
               <span style="color:#e2e8f0">نام خانوادگی</span>
-              <input id="auth-last" value="جهانی" required />
+              <input id="signup-last" value="جهانی" required />
             </label>
             <label class="field">
               <span style="color:#e2e8f0">شماره همراه</span>
-              <input id="auth-phone" value="09904703935" inputmode="numeric" required />
+              <input id="signup-phone" value="09904703935" inputmode="numeric" required />
             </label>
-            <label class="field">
-              <span style="color:#e2e8f0">پلن شروع</span>
-              <select id="auth-plan">
-                <option value="pro">مستری پرو — ادامه در سبد خرید</option>
-                <option value="essential">اقتصادی — ادامه در سبد خرید</option>
-              </select>
-            </label>
-            <p class="on-dark-muted" style="font-size:.92rem">هر دو پلن اول به سبد خرید می‌روند. ورود به پنل فقط بعد از خرید فرضی است.</p>
             <label class="checkbox-row">
-              <input type="checkbox" id="auth-terms" checked />
-              <span class="on-dark-muted">قوانین استفاده و امنیت متدولوژی اختصاصی ${PLATFORM.name} را می‌پذیرم.</span>
+              <input type="checkbox" id="signup-terms" checked />
+              <span class="on-dark-muted">قوانین ${PLATFORM.name} را می‌پذیرم.</span>
             </label>
-            <div id="auth-error" class="field-error"></div>
-            <button type="submit" class="btn-primary btn-block" id="auth-submit">ادامه به سبد خرید</button>
-            <button type="button" class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/admin-login">ورود مدیر پلتفرم (دمو)</button>
+            <div id="signup-error" class="field-error"></div>
+            <button type="submit" class="btn-primary btn-block">ثبت‌نام و دیدن پلن‌ها</button>
           </form>
         </div>
       </div>`);
@@ -445,5 +395,5 @@ const PublicViews = (() => {
       </div>`);
   }
 
-  return { landing, pricing, auth, checkout, adminLogin, parentPortal };
+  return { landing, pricing, login, signup, checkout, adminLogin, parentPortal };
 })();
