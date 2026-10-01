@@ -63,13 +63,7 @@ const APP = (() => {
       }
       return PublicViews.checkout(selected);
     }
-    if (hash === "#/auth/signup") {
-      if (SJ.hasAccount()) {
-        UI.navigate("#/auth");
-        return PublicViews.login();
-      }
-      return PublicViews.signup();
-    }
+    if (hash === "#/auth/signup") return PublicViews.signup();
     if (hash === "#/auth") return PublicViews.login();
     if (hash === "#/admin-login") return PublicViews.adminLogin();
 
@@ -217,13 +211,23 @@ const APP = (() => {
       if (event.target.id !== "login-form") return;
       event.preventDefault();
       const phone = toEnglishDigits(value("login-phone")).trim();
+      const password = value("login-password");
       const errorBox = document.getElementById("login-error");
       if (!/^09\d{9}$/.test(phone)) {
         errorBox.textContent = "شماره همراه باید ۱۱ رقم و با ۰۹ شروع شود.";
         return;
       }
-      if (!SJ.login(phone)) {
-        errorBox.textContent = "این شماره ثبت نشده است.";
+      if (!password) {
+        errorBox.textContent = "رمز عبور را وارد کنید.";
+        return;
+      }
+      const result = SJ.login(phone, password);
+      if (result === "missing") {
+        errorBox.textContent = "این شماره ثبت نشده است. از دکمه ثبت‌نام استفاده کنید.";
+        return;
+      }
+      if (result !== "ok") {
+        errorBox.textContent = "رمز عبور نادرست است.";
         return;
       }
       if (SJ.hasPurchased()) {
@@ -242,7 +246,8 @@ const APP = (() => {
       const firstName = value("signup-first").trim();
       const lastName = value("signup-last").trim();
       const phone = toEnglishDigits(value("signup-phone")).trim();
-      const terms = document.getElementById("signup-terms").checked;
+      const password = value("signup-password");
+      const password2 = value("signup-password2");
       const errorBox = document.getElementById("signup-error");
       if (!firstName || !lastName) {
         errorBox.textContent = "نام و نام خانوادگی را کامل وارد کنید.";
@@ -252,11 +257,20 @@ const APP = (() => {
         errorBox.textContent = "شماره همراه باید ۱۱ رقم و با ۰۹ شروع شود.";
         return;
       }
-      if (!terms) {
-        errorBox.textContent = "برای ادامه، پذیرش قوانین لازم است.";
+      if (password.length < 4) {
+        errorBox.textContent = "رمز عبور حداقل ۴ حرف باشد.";
         return;
       }
-      SJ.signup({ firstName, lastName, phone });
+      if (password !== password2) {
+        errorBox.textContent = "تکرار رمز با رمز یکی نیست.";
+        return;
+      }
+      SJ.signup({ firstName, lastName, phone, password });
+      if (SJ.hasPurchased()) {
+        UI.toast("وارد پنل شدید.");
+        UI.navigate("#/app");
+        return;
+      }
       UI.toast("ثبت‌نام شد. یک پلن انتخاب کنید.");
       UI.navigate("#/pricing");
     });

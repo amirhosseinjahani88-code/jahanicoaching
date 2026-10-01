@@ -5,17 +5,9 @@ const PublicViews = (() => {
 
   function landing() {
     const demo = APP.demoWorkout;
-    const story = [
-      ...VALUE_PILLARS.map((item) => ({ kicker: "ارزش", title: item.title, text: item.text })),
-      ...PAIN_POINTS.map((item) => ({ kicker: "مسئله", title: item.title, text: item.text, badge: item.fix })),
-      { kicker: "پلن", title: "پلن اقتصادی", text: "شاگرد، حضور و تمرین دستی." },
-      { kicker: "پلن", title: "پلن مستری پرو", text: "تحلیل، مالی و آرشیو." },
-      { kicker: "دسترسی", title: "پورتال اولیا", text: "رکورد، حضور و شهریه." },
-      ...ROADMAP.map((item) => ({ kicker: item.phase, title: item.title, text: item.text })),
-    ];
     return UI.publicShell(`
       <div class="dark-page">
-        <div class="page">
+        <div class="page stack-lg">
           <header class="site-header">
             <div class="brand" style="color:#fff">
               <span class="brand-mark">🏊</span>
@@ -27,12 +19,13 @@ const PublicViews = (() => {
             </div>
           </header>
 
-          <section class="landing-block">
+          <section class="stack">
             <span class="badge badge-cyan">${PLATFORM.designerRole}: ${PLATFORM.designer}</span>
             <h1 class="title-xl" style="color:#fff">مربیگری شنا، بدون کاغذ.</h1>
-            <p class="landing-lead on-dark-muted">تمرین، تحلیل و شهریه در یک جا.</p>
-            <div class="row hero-cta">
+            <p class="on-dark-muted">تمرین، تحلیل و شهریه در یک جا.</p>
+            <div class="row">
               <button class="btn-primary" data-action="auth:enter">ورود</button>
+              <button class="btn-ghost" data-action="go" data-hash="#/pricing">تعرفه‌ها</button>
             </div>
             <div class="hero-metrics">
               ${IMPACT_METRICS.map(
@@ -41,47 +34,73 @@ const PublicViews = (() => {
             </div>
           </section>
 
-          <section class="landing-block" id="demo-box">
-            <span class="landing-kicker">نمونه</span>
-            <h2 class="title-lg" style="color:#fff">یک جمله، یک جلسه.</h2>
-            <div class="card-glass stack">
-              <label class="field">
-                <span style="color:#e2e8f0">درخواست تمرین</span>
-                <textarea id="demo-brief" rows="3" placeholder="مثلاً: جلسه سرعت کرال سینه">${UI.escapeHtml(APP.demoBrief || AI.voice.samples[0])}</textarea>
-              </label>
-              <div class="row">
-                <button class="btn-primary" data-action="demo:generate" ${APP.ui.aiBusy ? "disabled" : ""}>
-                  ${APP.ui.aiBusy ? "در حال ساخت…" : "ساخت جلسه"}
-                </button>
-                <button class="btn-ghost btn-sm" data-action="demo:sample" ${APP.ui.aiBusy ? "disabled" : ""}>نمونه دیگر</button>
-              </div>
-              ${
-                demo
-                  ? `<div class="demo-output stack">
-                      <strong style="color:#fff">${UI.escapeHtml(demo.title)}</strong>
-                      ${demo.sets
-                        .map((s) => `<div class="demo-row"><span>${UI.escapeHtml(s.phase)}</span><span>${UI.escapeHtml(s.detail)}</span></div>`)
-                        .join("")}
-                      <button class="btn-white btn-sm" data-action="auth:enter">ذخیره در پنل</button>
-                    </div>`
-                  : ""
-              }
+          <section class="card-glass stack" id="demo-box">
+            <h2 class="title-md" style="color:#fff">یک جمله، یک جلسه.</h2>
+            <label class="field">
+              <span style="color:#e2e8f0">درخواست تمرین</span>
+              <textarea id="demo-brief" rows="3" placeholder="مثلاً: جلسه سرعت کرال سینه">${UI.escapeHtml(APP.demoBrief || AI.voice.samples[0])}</textarea>
+            </label>
+            <div class="row">
+              <button class="btn-primary" data-action="demo:generate" ${APP.ui.aiBusy ? "disabled" : ""}>
+                ${APP.ui.aiBusy ? "در حال ساخت…" : "ساخت جلسه"}
+              </button>
+              <button class="btn-ghost btn-sm" data-action="demo:sample" ${APP.ui.aiBusy ? "disabled" : ""}>نمونه دیگر</button>
+            </div>
+            ${
+              demo
+                ? `<div class="demo-output stack">
+                    <strong style="color:#fff">${UI.escapeHtml(demo.title)}</strong>
+                    ${demo.sets
+                      .map((s) => `<div class="demo-row"><span>${UI.escapeHtml(s.phase)}</span><span>${UI.escapeHtml(s.detail)}</span></div>`)
+                      .join("")}
+                    <button class="btn-white btn-sm" data-action="auth:enter">ذخیره در پنل</button>
+                  </div>`
+                : ""
+            }
+          </section>
+
+          <section class="stack">
+            <h2 class="title-lg" style="color:#fff">چه کار می‌کند</h2>
+            <div class="grid">
+              ${VALUE_PILLARS.map(
+                (item) => `
+                <div class="card-glass stack" style="gap:.35rem">
+                  <strong style="color:#fff">${item.title}</strong>
+                  <p class="on-dark-muted">${item.text}</p>
+                </div>`
+              ).join("")}
             </div>
           </section>
 
-          ${story
-            .map(
-              (item) => `
-            <section class="landing-block">
-              <span class="landing-kicker">${item.kicker}</span>
-              <h2 class="title-lg" style="color:#fff">${item.title}</h2>
-              <p class="landing-lead on-dark-muted">${item.text}</p>
-              ${item.badge ? `<span class="badge badge-cyan">${item.badge}</span>` : ""}
-            </section>`
-            )
-            .join("")}
+          <section class="stack">
+            <h2 class="title-lg" style="color:#fff">مشکل مربی</h2>
+            <div class="grid">
+              ${PAIN_POINTS.map(
+                (item) => `
+                <div class="card-glass stack" style="gap:.35rem">
+                  <strong style="color:#fff">${item.title}</strong>
+                  <p class="on-dark-muted">${item.text}</p>
+                  <span class="badge badge-cyan">${item.fix}</span>
+                </div>`
+              ).join("")}
+            </div>
+          </section>
 
-          <footer class="stack" style="gap:.5rem;padding:2rem 0 1rem">
+          <section class="stack">
+            <h2 class="title-lg" style="color:#fff">نقشه راه</h2>
+            <div class="grid">
+              ${ROADMAP.map(
+                (item) => `
+                <div class="card-glass stack" style="gap:.35rem">
+                  <span class="badge badge-light">${item.phase}</span>
+                  <strong style="color:#fff">${item.title}</strong>
+                  <p class="on-dark-muted">${item.text}</p>
+                </div>`
+              ).join("")}
+            </div>
+          </section>
+
+          <footer class="stack" style="gap:.5rem;padding-top:1rem">
             <div class="divider" style="background:rgba(255,255,255,.15)"></div>
             <div class="space-between">
               <span class="on-dark-muted">${PLATFORM.latinName}</span>
@@ -146,29 +165,26 @@ const PublicViews = (() => {
   /* ---------- ورود و ثبت‌نام ---------- */
 
   function login() {
-    const known = SJ.hasAccount();
-    const phone = known ? SJ.raw.coach.phone : "";
     return UI.publicShell(`
       <div class="dark-page">
         <div class="page auth-layout">
           <div class="stack">
             <button class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/">→ بازگشت</button>
             <h1 class="title-xl" style="color:#fff">ورود</h1>
-            <p class="on-dark-muted">اگر پلن خریده باشید، همان پلن باز می‌شود.</p>
+            <p class="on-dark-muted">شماره و رمز را وارد کنید.</p>
           </div>
           <form class="card-glass stack" id="login-form">
-            <h2 class="title-md" style="color:#fff">شماره همراه</h2>
             <label class="field">
-              <span style="color:#e2e8f0">شماره</span>
-              <input id="login-phone" value="${UI.escapeHtml(phone)}" inputmode="numeric" required />
+              <span style="color:#e2e8f0">شماره همراه</span>
+              <input id="login-phone" inputmode="numeric" autocomplete="username" required />
+            </label>
+            <label class="field">
+              <span style="color:#e2e8f0">رمز عبور</span>
+              <input id="login-password" type="password" autocomplete="current-password" required />
             </label>
             <div id="login-error" class="field-error"></div>
             <button type="submit" class="btn-primary btn-block">ورود</button>
-            ${
-              known
-                ? ""
-                : `<button type="button" class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/auth/signup">ثبت‌نام</button>`
-            }
+            <button type="button" class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/auth/signup">حساب ندارید؟ ثبت‌نام</button>
           </form>
         </div>
       </div>`);
@@ -181,27 +197,32 @@ const PublicViews = (() => {
           <div class="stack">
             <button class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/auth">→ بازگشت به ورود</button>
             <h1 class="title-xl" style="color:#fff">ثبت‌نام</h1>
-            <p class="on-dark-muted">بعد از ثبت‌نام، پلن‌ها را می‌بینید.</p>
+            <p class="on-dark-muted">حساب بسازید. بعد پلن را انتخاب می‌کنید.</p>
           </div>
           <form class="card-glass stack" id="signup-form">
             <label class="field">
               <span style="color:#e2e8f0">نام</span>
-              <input id="signup-first" value="امیرحسین" required />
+              <input id="signup-first" autocomplete="given-name" required />
             </label>
             <label class="field">
               <span style="color:#e2e8f0">نام خانوادگی</span>
-              <input id="signup-last" value="جهانی" required />
+              <input id="signup-last" autocomplete="family-name" required />
             </label>
             <label class="field">
               <span style="color:#e2e8f0">شماره همراه</span>
-              <input id="signup-phone" value="09904703935" inputmode="numeric" required />
+              <input id="signup-phone" inputmode="numeric" autocomplete="username" required />
             </label>
-            <label class="checkbox-row">
-              <input type="checkbox" id="signup-terms" checked />
-              <span class="on-dark-muted">قوانین ${PLATFORM.name} را می‌پذیرم.</span>
+            <label class="field">
+              <span style="color:#e2e8f0">رمز عبور</span>
+              <input id="signup-password" type="password" autocomplete="new-password" required />
+            </label>
+            <label class="field">
+              <span style="color:#e2e8f0">تکرار رمز</span>
+              <input id="signup-password2" type="password" autocomplete="new-password" required />
             </label>
             <div id="signup-error" class="field-error"></div>
-            <button type="submit" class="btn-primary btn-block">ثبت‌نام و دیدن پلن‌ها</button>
+            <button type="submit" class="btn-primary btn-block">ثبت‌نام</button>
+            <button type="button" class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/auth">قبلاً ثبت‌نام کرده‌اید؟ ورود</button>
           </form>
         </div>
       </div>`);

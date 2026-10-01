@@ -129,16 +129,20 @@ const SJ = (() => {
       .replace(/\D/g, "");
   }
 
-  function signup({ firstName, lastName, phone, plan }) {
+  function signup({ firstName, lastName, phone, password, plan }) {
+    const normalized = normalizePhone(phone);
+    const same = hasAccount() && normalized === normalizePhone(state.coach.phone);
     const bought = plan === "pro" || plan === "essential";
+    const keepPurchase = same && state.coach.purchased;
     state.coach = {
       id: "c1",
       firstName,
       lastName,
-      phone: normalizePhone(phone),
-      plan: bought ? plan : null,
-      purchased: bought,
-      since: "۱۴۰۴/۰۶",
+      phone: normalized,
+      password: String(password || ""),
+      plan: bought ? plan : keepPurchase ? state.coach.plan : null,
+      purchased: bought || keepPurchase,
+      since: same && state.coach.since ? state.coach.since : "۱۴۰۴/۰۶",
       pool: "استخر قدس",
       credential: "مورد تایید اساتید تراز اول شنا",
     };
@@ -154,12 +158,13 @@ const SJ = (() => {
     return !!(state.coach && state.coach.purchased && (state.coach.plan === "pro" || state.coach.plan === "essential"));
   }
 
-  function login(phone) {
-    if (!hasAccount()) return false;
-    if (normalizePhone(phone) !== normalizePhone(state.coach.phone)) return false;
+  function login(phone, password) {
+    if (!hasAccount()) return "missing";
+    if (normalizePhone(phone) !== normalizePhone(state.coach.phone)) return "missing";
+    if (String(state.coach.password || "") !== String(password || "")) return "password";
     state.session = { role: "coach", ghostFrom: null };
     save();
-    return true;
+    return "ok";
   }
 
   function loginAdmin() {
