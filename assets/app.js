@@ -49,7 +49,10 @@ const APP = (() => {
     if (hash.startsWith("#/s/")) {
       return PublicViews.parentPortal(parts[1], parts[2]);
     }
-    if (hash === "#/" || hash === "#") return PublicViews.landing();
+    if (hash === "#/" || hash === "#") {
+      if (SJ.isLoggedIn()) SJ.logout();
+      return PublicViews.landing();
+    }
     if (hash === "#/pricing") return PublicViews.pricing();
     if (hash === "#/checkout" || hash.startsWith("#/checkout/")) {
       if (!SJ.isLoggedIn()) {
@@ -348,14 +351,6 @@ APP.action("admin:login", () => {
 });
 
 APP.action("auth:enter", () => {
-  if (SJ.isLoggedIn() && SJ.hasPurchased()) {
-    UI.navigate("#/app");
-    return;
-  }
-  if (SJ.isLoggedIn()) {
-    UI.navigate("#/pricing");
-    return;
-  }
   UI.navigate("#/auth");
 });
 
