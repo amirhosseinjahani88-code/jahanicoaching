@@ -6,6 +6,7 @@ const AdminViews = (() => {
       { hash: "#/admin", label: t("هوش تجاری") },
       { hash: "#/admin/coaches", label: t("دایرکتوری مربیان") },
       { hash: "#/admin/cms", label: t("CMS متدولوژی") },
+      { hash: "#/admin/settings", label: t("تنظیمات") },
     ];
     return `
       <header class="topbar topbar-admin">
@@ -22,7 +23,6 @@ const AdminViews = (() => {
               .join("")}
           </nav>
           <div class="topbar-actions">
-            ${UI.prefSwitch()}
             <button class="btn-quiet" style="color:#cbd5e1" data-action="auth:logout">${t("خروج")}</button>
           </div>
           <button class="nav-toggle nav-toggle-dark" data-action="nav:toggle" aria-expanded="false" aria-label="باز کردن منو">☰</button>
@@ -169,5 +169,14 @@ const AdminViews = (() => {
     return shell("#/admin/cms", body);
   }
 
-  return { bi, coaches, cms };
+  function settings() {
+    const body = `
+      <div class="stack-lg">
+        ${UI.sectionTitle("تنظیمات", "زبان و ظاهر برنامه.")}
+        ${UI.prefsSections()}
+      </div>`;
+    return shell("#/admin/settings", body);
+  }
+
+  return { bi, coaches, cms, settings };
 })();

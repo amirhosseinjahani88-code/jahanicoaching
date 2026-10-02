@@ -77,6 +77,7 @@ const APP = (() => {
       }
       if (hash === "#/admin/coaches") return AdminViews.coaches();
       if (hash === "#/admin/cms") return AdminViews.cms();
+      if (hash === "#/admin/settings") return AdminViews.settings();
       return AdminViews.bi();
     }
 
