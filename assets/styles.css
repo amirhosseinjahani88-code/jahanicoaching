@@ -251,7 +251,7 @@ textarea:focus {
 }
 
 .card-link {
-  text-align: right;
+  text-align: start;
   width: 100%;
   border-radius: var(--radius);
   padding: 1.5rem;
@@ -871,7 +871,7 @@ textarea:focus {
 
 .kpi-link,
 button.plan-chip {
-  text-align: right;
+  text-align: start;
   cursor: pointer;
   border-radius: var(--radius);
   padding: 1.5rem;
@@ -944,7 +944,7 @@ button.plan-chip {
   align-items: center;
   gap: 0.75rem 1rem;
   width: 100%;
-  text-align: right;
+  text-align: start;
   padding: 0.85rem 1.1rem;
   border-radius: 14px;
   background: var(--white);
@@ -1431,7 +1431,7 @@ button.plan-chip {
     gap: 1.25rem;
   }
 
-  button:not(.btn-quiet):not(.nav button):not(.tabs button):not(.brand):not(.nav-toggle):not(.toggle-group button):not(.student-row) {
+  button:not(.btn-quiet):not(.nav button):not(.tabs button):not(.brand):not(.nav-toggle):not(.toggle-group button):not(.student-row):not(.pref-btn) {
     min-height: 44px;
   }
 }
@@ -1474,5 +1474,157 @@ button.plan-chip {
   .topbar.nav-open .nav {
     display: flex;
   }
+}
+
+.pref-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.pref-btn {
+  min-height: 0;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.pref-btn.is-on {
+  background: #fff;
+  color: #0b192c;
+}
+
+.pref-gap {
+  width: 1px;
+  align-self: stretch;
+  margin: 0.25rem 0.15rem;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.page-tools {
+  display: flex;
+  justify-content: flex-end;
+}
+
+html[data-theme="light"] .pref-switch {
+  background: #fff;
+  border-color: var(--line);
+}
+
+html[data-theme="light"] .pref-btn {
+  color: var(--navy);
+}
+
+html[data-theme="light"] .pref-btn.is-on {
+  background: var(--navy);
+  color: #fff;
+}
+
+html[data-theme="light"] .pref-gap {
+  background: var(--line);
+}
+
+html[data-theme="light"] .dark-page {
+  background: var(--page);
+  color: var(--navy);
+}
+
+html[data-theme="light"] .dark-page .card-glass,
+html[data-theme="light"] .dark-page .demo-output,
+html[data-theme="light"] .dark-page .closing {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--navy);
+}
+
+html[data-theme="light"] .dark-page .on-dark-muted,
+html[data-theme="light"] .dark-page .plan-list-dark,
+html[data-theme="light"] .dark-page .demo-row {
+  color: var(--muted);
+}
+
+html[data-theme="light"] .dark-page .btn-ghost {
+  background: #fff;
+  color: var(--navy);
+  border-color: var(--line);
+}
+
+html[data-theme="light"] .dark-page .btn-white {
+  border: 1px solid var(--line);
+}
+
+html[data-theme="light"] .dark-page .site-nav {
+  background: linear-gradient(180deg, rgba(244, 247, 251, 0.96), rgba(244, 247, 251, 0.8) 70%, transparent);
+}
+
+html[data-theme="light"] .dark-page [style*="color:#fff"],
+html[data-theme="light"] .dark-page [style*="color:#e2e8f0"],
+html[data-theme="light"] .dark-page [style*="color:#baf4ff"],
+html[data-theme="light"] .dark-page [style*="color:#94a3b8"] {
+  color: #0b192c !important;
+}
+
+html[data-theme="light"] .dark-page .hero-metrics .title-lg,
+html[data-theme="light"] .dark-page .price-figure {
+  color: #0a84ff !important;
+}
+
+html[data-theme="light"] .site-credit.is-dark {
+  color: var(--muted);
+}
+
+html[data-theme="dark"] body {
+  background: #07111e;
+  color: #e8eef6;
+}
+
+html[data-theme="dark"] .topbar {
+  background: rgba(7, 17, 30, 0.92);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .card-link,
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea {
+  background: #122033;
+  color: #e8eef6;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="dark"] .muted,
+html[data-theme="dark"] .nav button,
+html[data-theme="dark"] .nav-group-btn {
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .nav button:hover,
+html[data-theme="dark"] .nav-group-btn:hover,
+html[data-theme="dark"] .nav-group.is-current > .nav-group-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+html[data-theme="dark"] .nav button[aria-current="page"] {
+  background: #fff;
+  color: #0b192c;
+}
+
+html[data-theme="dark"] .topbar .pref-btn {
+  color: #e8eef6;
+}
+
+html[data-theme="dark"] .topbar .pref-btn.is-on {
+  background: #fff;
+  color: #0b192c;
 }
 

@@ -205,10 +205,22 @@ const UI = (() => {
     return activeHash === item.hash;
   }
 
+  function prefSwitch() {
+    const prefs = Prefs.get();
+    return `
+      <div class="pref-switch" role="group" aria-label="${t("روشن")}">
+        <button type="button" class="pref-btn ${prefs.lang === "fa" ? "is-on" : ""}" data-action="pref:lang" data-lang="fa">فا</button>
+        <button type="button" class="pref-btn ${prefs.lang === "en" ? "is-on" : ""}" data-action="pref:lang" data-lang="en">EN</button>
+        <span class="pref-gap" aria-hidden="true"></span>
+        <button type="button" class="pref-btn ${prefs.theme === "light" ? "is-on" : ""}" data-action="pref:theme" data-theme="light" aria-label="${t("روشن")}">☀</button>
+        <button type="button" class="pref-btn ${prefs.theme === "dark" ? "is-on" : ""}" data-action="pref:theme" data-theme="dark" aria-label="${t("تیره")}">☾</button>
+      </div>`;
+  }
+
   function navButton(item, activeHash) {
     const locked = item.pro && !SJ.isPro();
     const current = navItemActive(item, activeHash);
-    return `<button data-action="go" data-hash="${item.hash}" ${current ? 'aria-current="page"' : ""}>${item.label}${locked ? " 🔒" : ""}</button>`;
+    return `<button data-action="go" data-hash="${item.hash}" ${current ? 'aria-current="page"' : ""}>${t(item.label)}${locked ? " 🔒" : ""}</button>`;
   }
 
   function renderCoachNav(activeHash) {
@@ -218,7 +230,7 @@ const UI = (() => {
       return `
         <div class="nav-group${open ? " is-current" : ""}" data-group="${item.id}">
           <button class="nav-group-btn" data-action="nav:menu" data-group="${item.id}" aria-expanded="false">
-            ${item.label} <span class="nav-caret">▾</span>
+            ${t(item.label)} <span class="nav-caret">▾</span>
           </button>
           <div class="nav-submenu" role="menu">
             ${item.children.map((child) => navButton(child, activeHash)).join("")}
@@ -235,8 +247,8 @@ const UI = (() => {
          </div>`
       : "";
     const planBadge = SJ.isPro()
-      ? '<span class="badge badge-blue">مستری پرو</span>'
-      : '<span class="badge badge-warn">اقتصادی</span>';
+      ? `<span class="badge badge-blue">${t("مستری پرو")}</span>`
+      : `<span class="badge badge-warn">${t("اقتصادی")}</span>`;
     return `
       ${ghostBanner}
       <header class="topbar">
@@ -245,17 +257,18 @@ const UI = (() => {
             <span class="brand-mark">🏊</span>
             <span>${PLATFORM.name}</span>
           </button>
-          <nav class="nav" aria-label="صفحات مربی">
+          <nav class="nav" aria-label="${t("صفحات مربی")}">
             ${renderCoachNav(activeHash)}
           </nav>
           <div class="topbar-actions">
+            ${prefSwitch()}
             <div class="nav-group nav-group-account" data-group="account">
               <button class="nav-group-btn" data-action="nav:menu" data-group="account" aria-expanded="false">
                 ${planBadge} <span class="nav-caret">▾</span>
               </button>
               <div class="nav-submenu" role="menu">
-                <button data-action="go" data-hash="#/app/profile" ${activeHash === "#/app/profile" ? 'aria-current="page"' : ""}>حساب من</button>
-                <button data-action="auth:logout">خروج</button>
+                <button data-action="go" data-hash="#/app/profile" ${activeHash === "#/app/profile" ? 'aria-current="page"' : ""}>${t("حساب من")}</button>
+                <button data-action="auth:logout">${t("خروج")}</button>
               </div>
             </div>
           </div>
@@ -271,7 +284,7 @@ const UI = (() => {
   }
 
   function designerCredit({ dark = false } = {}) {
-    return `<p class="site-credit${dark ? " is-dark" : ""}">${escapeHtml(PLATFORM.designerRole)}: ${escapeHtml(PLATFORM.designer)}</p>`;
+    return `<p class="site-credit${dark ? " is-dark" : ""}">${escapeHtml(t(PLATFORM.designerRole))}: ${escapeHtml(PLATFORM.designer)}</p>`;
   }
 
   function aiStatusCard() {
@@ -333,13 +346,13 @@ const UI = (() => {
       <div class="stack" style="gap:.35rem">
         ${
           backHash === "@back"
-            ? `<button class="btn-quiet" data-action="nav:back">→ بازگشت</button>`
+            ? `<button class="btn-quiet" data-action="nav:back">${t("→ بازگشت")}</button>`
             : backHash
-              ? `<button class="btn-quiet" data-action="go" data-hash="${backHash}">→ بازگشت</button>`
+              ? `<button class="btn-quiet" data-action="go" data-hash="${backHash}">${t("→ بازگشت")}</button>`
               : ""
         }
-        <h1 class="title-xl">${title}</h1>
-        ${subtitle ? `<p class="muted">${subtitle}</p>` : ""}
+        <h1 class="title-xl">${t(title)}</h1>
+        ${subtitle ? `<p class="muted">${t(subtitle)}</p>` : ""}
       </div>`;
   }
 
@@ -371,6 +384,7 @@ const UI = (() => {
     secs,
     escapeHtml,
     initials,
+    prefSwitch,
     toast,
     modal,
     closeModal,

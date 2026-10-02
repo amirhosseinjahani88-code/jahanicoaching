@@ -378,6 +378,16 @@ APP.action("admin:login", () => {
   UI.navigate("#/admin");
 });
 
+APP.action("pref:lang", (data) => {
+  Prefs.setLang(data.lang);
+  APP.render();
+});
+
+APP.action("pref:theme", (data) => {
+  Prefs.setTheme(data.theme);
+  APP.render();
+});
+
 APP.action("auth:enter", () => {
   rememberHere();
   UI.navigate("#/auth");

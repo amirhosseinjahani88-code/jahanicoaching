@@ -3,9 +3,9 @@
 const AdminViews = (() => {
   function shell(active, content) {
     const tabs = [
-      { hash: "#/admin", label: "هوش تجاری" },
-      { hash: "#/admin/coaches", label: "دایرکتوری مربیان" },
-      { hash: "#/admin/cms", label: "CMS متدولوژی" },
+      { hash: "#/admin", label: t("هوش تجاری") },
+      { hash: "#/admin/coaches", label: t("دایرکتوری مربیان") },
+      { hash: "#/admin/cms", label: t("CMS متدولوژی") },
     ];
     return `
       <header class="topbar topbar-admin">
@@ -14,7 +14,7 @@ const AdminViews = (() => {
             <span class="brand-mark" style="background:#fff;color:#0b192c">⚙️</span>
             <span>${PLATFORM.name}</span>
           </div>
-          <nav class="nav nav-dark" aria-label="صفحات مدیریت">
+          <nav class="nav nav-dark" aria-label="${t("صفحات مدیریت")}">
             ${tabs
               .map(
                 (t) => `<button data-action="go" data-hash="${t.hash}" ${active === t.hash ? 'aria-current="page"' : ""}>${t.label}</button>`
@@ -22,7 +22,8 @@ const AdminViews = (() => {
               .join("")}
           </nav>
           <div class="topbar-actions">
-            <button class="btn-quiet" style="color:#cbd5e1" data-action="auth:logout">خروج</button>
+            ${UI.prefSwitch()}
+            <button class="btn-quiet" style="color:#cbd5e1" data-action="auth:logout">${t("خروج")}</button>
           </div>
           <button class="nav-toggle nav-toggle-dark" data-action="nav:toggle" aria-expanded="false" aria-label="باز کردن منو">☰</button>
         </div>

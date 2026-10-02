@@ -8,10 +8,11 @@ const PublicViews = (() => {
           <span class="brand-mark">🏊</span>
           <span>${PLATFORM.name}</span>
         </button>
-        <nav class="site-header-actions" aria-label="ناوبری سایت">
-          <button class="btn-ghost btn-sm" data-action="go" data-hash="#/pricing">تعرفه‌ها</button>
-          <button class="btn-ghost btn-sm" data-action="auth:enter">ورود</button>
-          <button class="btn-white btn-sm" data-action="go" data-hash="#/auth/signup">شروع</button>
+        <nav class="site-header-actions" aria-label="${t("ناوبری سایت")}">
+          ${UI.prefSwitch()}
+          <button class="btn-ghost btn-sm" data-action="go" data-hash="#/pricing">${t("تعرفه‌ها")}</button>
+          <button class="btn-ghost btn-sm" data-action="auth:enter">${t("ورود")}</button>
+          <button class="btn-white btn-sm" data-action="go" data-hash="#/auth/signup">${t("شروع")}</button>
         </nav>
       </header>`;
   }
@@ -22,7 +23,7 @@ const PublicViews = (() => {
         <div class="divider" style="background:rgba(255,255,255,.15)"></div>
         <div class="space-between">
           <span class="on-dark-muted">${PLATFORM.latinName}</span>
-          <button class="btn-quiet" style="color:#94a3b8" data-action="go" data-hash="#/admin-login">ورود مدیر</button>
+          <button class="btn-quiet" style="color:#94a3b8" data-action="go" data-hash="#/admin-login">${t("ورود مدیر")}</button>
         </div>
         ${UI.designerCredit({ dark: true })}
       </footer>`;
@@ -39,16 +40,16 @@ const PublicViews = (() => {
             return `
             <article class="card-glass plan-card ${featured ? "plan-card-pro" : ""}">
               <div class="space-between">
-                <h2 class="title-md" style="color:#fff">${plan.title}</h2>
-                ${featured ? `<span class="badge badge-cyan">${plan.badge || "پیشنهادی"}</span>` : `<span class="badge badge-light">${plan.latin}</span>`}
+                <h2 class="title-md" style="color:#fff">${t(plan.title)}</h2>
+                ${featured ? `<span class="badge badge-cyan">${t(plan.badge || "پیشنهادی")}</span>` : `<span class="badge badge-light">${plan.latin}</span>`}
               </div>
-              <p class="on-dark-muted">${plan.audience}</p>
-              <strong class="price-figure">${plan.priceLabel}</strong>
+              <p class="on-dark-muted">${t(plan.audience)}</p>
+              <strong class="price-figure">${t(plan.priceLabel)}</strong>
               <ul class="plan-list plan-list-dark">
-                ${plan.features.slice(0, 4).map((f) => `<li>${f}</li>`).join("")}
+                ${plan.features.slice(0, 4).map((f) => `<li>${t(f)}</li>`).join("")}
               </ul>
               <button class="${featured ? "btn-primary" : "btn-white"} btn-block" data-action="plan:choose" data-plan="${plan.id}">
-                ${owned ? "پلن شما" : "شروع"}
+                ${owned ? t("پلن شما") : t("شروع")}
               </button>
             </article>`;
           })
@@ -67,32 +68,32 @@ const PublicViews = (() => {
 
           <section class="hero">
             <div class="stack">
-              <span class="badge badge-cyan">${PLATFORM.designerRole}: ${PLATFORM.designer}</span>
-              <h1 class="title-xl" style="color:#fff">مربیگری شنا، بدون کاغذ.</h1>
-              <p class="on-dark-muted">تمرین، تحلیل و شهریه در یک جا.</p>
+              <span class="badge badge-cyan">${t(PLATFORM.designerRole)}: ${PLATFORM.designer}</span>
+              <h1 class="title-xl" style="color:#fff">${t("مربیگری شنا، بدون کاغذ.")}</h1>
+              <p class="on-dark-muted">${t("تمرین، تحلیل و شهریه در یک جا.")}</p>
               <div class="row hero-cta">
-                <button class="btn-primary" data-action="go" data-hash="#/auth/signup">شروع</button>
-                <button class="btn-white" data-action="auth:enter">ورود</button>
-                <button class="btn-ghost" data-action="go" data-hash="#/pricing">تعرفه‌ها</button>
+                <button class="btn-primary" data-action="go" data-hash="#/auth/signup">${t("شروع")}</button>
+                <button class="btn-white" data-action="auth:enter">${t("ورود")}</button>
+                <button class="btn-ghost" data-action="go" data-hash="#/pricing">${t("تعرفه‌ها")}</button>
               </div>
               <div class="hero-metrics">
                 ${IMPACT_METRICS.map(
-                  (m) => `<div><div class="title-lg" style="color:#67e8f9">${m.value}</div><div class="on-dark-muted">${m.label}</div></div>`
+                  (m) => `<div><div class="title-lg" style="color:#67e8f9">${t(m.value)}</div><div class="on-dark-muted">${t(m.label)}</div></div>`
                 ).join("")}
               </div>
             </div>
 
             <section class="card-glass stack" id="demo-box">
-            <h2 class="title-md" style="color:#fff">یک جمله، یک جلسه.</h2>
+            <h2 class="title-md" style="color:#fff">${t("یک جمله، یک جلسه.")}</h2>
             <label class="field">
-              <span style="color:#e2e8f0">درخواست تمرین</span>
-              <textarea id="demo-brief" rows="3" placeholder="مثلاً: جلسه سرعت کرال سینه">${UI.escapeHtml(APP.demoBrief || AI.voice.samples[0])}</textarea>
+              <span style="color:#e2e8f0">${t("درخواست تمرین")}</span>
+              <textarea id="demo-brief" rows="3" placeholder="${t("مثلاً: جلسه سرعت کرال سینه")}">${UI.escapeHtml(APP.demoBrief || AI.voice.samples[0])}</textarea>
             </label>
             <div class="row">
               <button class="btn-primary" data-action="demo:generate" ${APP.ui.aiBusy ? "disabled" : ""}>
-                ${APP.ui.aiBusy ? "در حال ساخت…" : "ساخت جلسه"}
+                ${APP.ui.aiBusy ? t("در حال ساخت…") : t("ساخت جلسه")}
               </button>
-              <button class="btn-ghost btn-sm" data-action="demo:sample" ${APP.ui.aiBusy ? "disabled" : ""}>نمونه دیگر</button>
+              <button class="btn-ghost btn-sm" data-action="demo:sample" ${APP.ui.aiBusy ? "disabled" : ""}>${t("نمونه دیگر")}</button>
             </div>
             ${
               demo
@@ -101,7 +102,7 @@ const PublicViews = (() => {
                     ${demo.sets
                       .map((s) => `<div class="demo-row"><span>${UI.escapeHtml(s.phase)}</span><span>${UI.escapeHtml(s.detail)}</span></div>`)
                       .join("")}
-                    <button class="btn-white btn-sm" data-action="auth:enter">ذخیره</button>
+                    <button class="btn-white btn-sm" data-action="auth:enter">${t("ذخیره")}</button>
                   </div>`
                 : ""
             }
@@ -109,27 +110,27 @@ const PublicViews = (() => {
           </section>
 
           <section class="stack">
-            <h2 class="title-lg" style="color:#fff">چه کار می‌کند</h2>
+            <h2 class="title-lg" style="color:#fff">${t("چه کار می‌کند")}</h2>
             <div class="grid">
               ${VALUE_PILLARS.map(
                 (item) => `
                 <div class="card-glass stack" style="gap:.35rem">
-                  <strong style="color:#fff">${item.title}</strong>
-                  <p class="on-dark-muted">${item.text}</p>
+                  <strong style="color:#fff">${t(item.title)}</strong>
+                  <p class="on-dark-muted">${t(item.text)}</p>
                 </div>`
               ).join("")}
             </div>
           </section>
 
           <section class="stack">
-            <h2 class="title-lg" style="color:#fff">مشکل مربی</h2>
+            <h2 class="title-lg" style="color:#fff">${t("مشکل مربی")}</h2>
             <div class="grid">
               ${PAIN_POINTS.map(
                 (item) => `
                 <div class="card-glass stack" style="gap:.35rem">
-                  <strong style="color:#fff">${item.title}</strong>
-                  <p class="on-dark-muted">${item.text}</p>
-                  <span class="badge badge-cyan">${item.fix}</span>
+                  <strong style="color:#fff">${t(item.title)}</strong>
+                  <p class="on-dark-muted">${t(item.text)}</p>
+                  <span class="badge badge-cyan">${t(item.fix)}</span>
                 </div>`
               ).join("")}
             </div>
@@ -137,20 +138,20 @@ const PublicViews = (() => {
 
           <section class="stack">
             <div class="space-between">
-              <h2 class="title-lg" style="color:#fff">تعرفه‌ها</h2>
-              <button class="btn-ghost btn-sm" data-action="go" data-hash="#/pricing">جزئیات پلن‌ها</button>
+              <h2 class="title-lg" style="color:#fff">${t("تعرفه‌ها")}</h2>
+              <button class="btn-ghost btn-sm" data-action="go" data-hash="#/pricing">${t("جزئیات پلن‌ها")}</button>
             </div>
             ${planCards()}
           </section>
 
           <section class="closing">
             <div class="stack" style="gap:.25rem">
-              <strong style="color:#fff">مربیگری شنا، در یک جا.</strong>
-              <p class="on-dark-muted">${PLATFORM.tagline}</p>
+              <strong style="color:#fff">${t("مربیگری شنا، در یک جا.")}</strong>
+              <p class="on-dark-muted">${t(PLATFORM.tagline)}</p>
             </div>
             <div class="row">
-              <button class="btn-primary" data-action="go" data-hash="#/auth/signup">ثبت‌نام</button>
-              <button class="btn-white" data-action="auth:enter">ورود</button>
+              <button class="btn-primary" data-action="go" data-hash="#/auth/signup">${t("ثبت‌نام")}</button>
+              <button class="btn-white" data-action="auth:enter">${t("ورود")}</button>
             </div>
           </section>
 
@@ -168,9 +169,9 @@ const PublicViews = (() => {
         <div class="page stack-lg">
           ${publicHeader()}
           <section class="stack">
-            <button class="btn-quiet" style="color:#baf4ff" data-action="nav:back">→ بازگشت</button>
-            <h1 class="title-xl" style="color:#fff">تعرفه‌ها</h1>
-            <p class="on-dark-muted">دو اشتراک سالانه برای مربی شنا.</p>
+            <button class="btn-quiet" style="color:#baf4ff" data-action="nav:back">${t("→ بازگشت")}</button>
+            <h1 class="title-xl" style="color:#fff">${t("تعرفه‌ها")}</h1>
+            <p class="on-dark-muted">${t("دو اشتراک سالانه برای مربی شنا.")}</p>
           </section>
           <div class="plan-grid">
             ${[PLANS.essential, PLANS.pro]
@@ -180,32 +181,32 @@ const PublicViews = (() => {
                 return `
                 <article class="card-glass plan-card ${featured ? "plan-card-pro" : ""}">
                   <div class="space-between">
-                    <h2 class="title-lg" style="color:#fff">${plan.title}</h2>
-                    ${featured ? `<span class="badge badge-cyan">${plan.badge}</span>` : `<span class="badge badge-light">${plan.latin}</span>`}
+                    <h2 class="title-lg" style="color:#fff">${t(plan.title)}</h2>
+                    ${featured ? `<span class="badge badge-cyan">${t(plan.badge)}</span>` : `<span class="badge badge-light">${plan.latin}</span>`}
                   </div>
-                  <p class="on-dark-muted">${plan.audience}</p>
-                  <strong class="price-figure">${plan.priceLabel}</strong>
+                  <p class="on-dark-muted">${t(plan.audience)}</p>
+                  <strong class="price-figure">${t(plan.priceLabel)}</strong>
                   <ul class="plan-list plan-list-dark">
-                    ${plan.features.map((f) => `<li>${f}</li>`).join("")}
-                    ${plan.locked.map((f) => `<li class="is-locked">${f}</li>`).join("")}
+                    ${plan.features.map((f) => `<li>${t(f)}</li>`).join("")}
+                    ${plan.locked.map((f) => `<li class="is-locked">${t(f)}</li>`).join("")}
                   </ul>
                   <button class="${featured ? "btn-primary" : "btn-white"} btn-block" data-action="plan:choose" data-plan="${plan.id}">
-                    ${owned ? "پلن شما" : "شروع"}
+                    ${owned ? t("پلن شما") : t("شروع")}
                   </button>
                 </article>`;
               })
               .join("")}
           </div>
           <section class="stack">
-            <h2 class="title-md" style="color:#fff">برای استخر و آکادمی</h2>
+            <h2 class="title-md" style="color:#fff">${t("برای استخر و آکادمی")}</h2>
             <div class="grid">
               ${REVENUE_STREAMS.filter((s) => s.id === "academy" || s.id === "vault")
                 .map(
                   (s) => `
                   <div class="card-glass stack" style="gap:.35rem">
-                    <strong style="color:#fff">${s.title}</strong>
-                    <span class="badge badge-cyan">${s.price}</span>
-                    <p class="on-dark-muted">${s.note}</p>
+                    <strong style="color:#fff">${t(s.title)}</strong>
+                    <span class="badge badge-cyan">${t(s.price)}</span>
+                    <p class="on-dark-muted">${t(s.note)}</p>
                   </div>`
                 )
                 .join("")}
@@ -225,22 +226,22 @@ const PublicViews = (() => {
           ${publicHeader()}
           <div class="auth-layout">
             <div class="stack auth-aside">
-              <button class="btn-quiet" style="color:#baf4ff" data-action="nav:back">→ بازگشت</button>
-              <h1 class="title-xl" style="color:#fff">ورود</h1>
-              <p class="on-dark-muted">${PLATFORM.tagline}</p>
+              <button class="btn-quiet" style="color:#baf4ff" data-action="nav:back">${t("→ بازگشت")}</button>
+              <h1 class="title-xl" style="color:#fff">${t("ورود")}</h1>
+              <p class="on-dark-muted">${t(PLATFORM.tagline)}</p>
             </div>
             <form class="card-glass stack" id="login-form">
               <label class="field">
-                <span style="color:#e2e8f0">شماره همراه</span>
-                <input id="login-phone" inputmode="numeric" autocomplete="username" placeholder="۰۹۱۲…" required />
+                <span style="color:#e2e8f0">${t("شماره همراه")}</span>
+                <input id="login-phone" inputmode="numeric" autocomplete="username" placeholder="0912…" required />
               </label>
               <label class="field">
-                <span style="color:#e2e8f0">رمز عبور</span>
+                <span style="color:#e2e8f0">${t("رمز عبور")}</span>
                 <input id="login-password" type="password" autocomplete="current-password" required />
               </label>
               <div id="login-error" class="field-error"></div>
-              <button type="submit" class="btn-primary btn-block">ورود</button>
-              <button type="button" class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/auth/signup">حساب ندارید؟ ثبت‌نام</button>
+              <button type="submit" class="btn-primary btn-block">${t("ورود")}</button>
+              <button type="button" class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/auth/signup">${t("حساب ندارید؟ ثبت‌نام")}</button>
             </form>
           </div>
         </div>
@@ -254,34 +255,34 @@ const PublicViews = (() => {
           ${publicHeader()}
           <div class="auth-layout">
             <div class="stack auth-aside">
-              <button class="btn-quiet" style="color:#baf4ff" data-action="nav:back">→ بازگشت</button>
-              <h1 class="title-xl" style="color:#fff">ثبت‌نام</h1>
-              <p class="on-dark-muted">${PLATFORM.tagline}</p>
+              <button class="btn-quiet" style="color:#baf4ff" data-action="nav:back">${t("→ بازگشت")}</button>
+              <h1 class="title-xl" style="color:#fff">${t("ثبت‌نام")}</h1>
+              <p class="on-dark-muted">${t(PLATFORM.tagline)}</p>
             </div>
             <form class="card-glass stack" id="signup-form">
             <label class="field">
-              <span style="color:#e2e8f0">نام</span>
+              <span style="color:#e2e8f0">${t("نام")}</span>
               <input id="signup-first" autocomplete="given-name" required />
             </label>
             <label class="field">
-              <span style="color:#e2e8f0">نام خانوادگی</span>
+              <span style="color:#e2e8f0">${t("نام خانوادگی")}</span>
               <input id="signup-last" autocomplete="family-name" required />
             </label>
             <label class="field">
-              <span style="color:#e2e8f0">شماره همراه</span>
+              <span style="color:#e2e8f0">${t("شماره همراه")}</span>
               <input id="signup-phone" inputmode="numeric" autocomplete="username" required />
             </label>
             <label class="field">
-              <span style="color:#e2e8f0">رمز عبور</span>
+              <span style="color:#e2e8f0">${t("رمز عبور")}</span>
               <input id="signup-password" type="password" autocomplete="new-password" required />
             </label>
             <label class="field">
-              <span style="color:#e2e8f0">تکرار رمز</span>
+              <span style="color:#e2e8f0">${t("تکرار رمز")}</span>
               <input id="signup-password2" type="password" autocomplete="new-password" required />
             </label>
             <div id="signup-error" class="field-error"></div>
-            <button type="submit" class="btn-primary btn-block">ثبت‌نام</button>
-            <button type="button" class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/auth">قبلاً ثبت‌نام کرده‌اید؟ ورود</button>
+            <button type="submit" class="btn-primary btn-block">${t("ثبت‌نام")}</button>
+            <button type="button" class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/auth">${t("قبلاً ثبت‌نام کرده‌اید؟ ورود")}</button>
           </form>
           </div>
         </div>
@@ -299,56 +300,57 @@ const PublicViews = (() => {
 
     return `
       <main class="page stack-lg">
+        <div class="page-tools">${UI.prefSwitch()}</div>
         ${UI.sectionTitle("سبد خرید", "این پرداخت فرضی است و هیچ پول واقعی کم نمی‌شود.", "@back")}
         <div class="two-col">
           <section class="card stack cart">
             <div class="space-between">
-              <h2 class="title-md">سفارش شما</h2>
-              <span class="badge badge-warn">پرداخت فرضی</span>
+              <h2 class="title-md">${t("سفارش شما")}</h2>
+              <span class="badge badge-warn">${t("پرداخت فرضی")}</span>
             </div>
             <div class="cart-row">
               <div class="stack" style="gap:.2rem">
-                <strong>${plan.title}</strong>
-                <span class="muted">${plan.audience}</span>
-                <span class="muted">اشتراک یک‌ساله</span>
+                <strong>${t(plan.title)}</strong>
+                <span class="muted">${t(plan.audience)}</span>
+                <span class="muted">${t("اشتراک یک‌ساله")}</span>
               </div>
               <strong class="num">${UI.money(plan.priceToman)}</strong>
             </div>
             <ul class="plan-list">
-              ${plan.features.slice(0, 4).map((feature) => `<li>${feature}</li>`).join("")}
+              ${plan.features.slice(0, 4).map((feature) => `<li>${t(feature)}</li>`).join("")}
             </ul>
             <div class="divider"></div>
             <div class="cart-row cart-total">
-              <span>مبلغ قابل پرداخت</span>
-              <strong>${plan.priceLabel}</strong>
+              <span>${t("مبلغ قابل پرداخت")}</span>
+              <strong>${t(plan.priceLabel)}</strong>
             </div>
           </section>
 
           <form class="card stack" id="checkout-form">
             <input type="hidden" id="checkout-plan" value="${plan.id}" />
-            <h2 class="title-md">${loggedIn ? "تأیید خرید" : "ثبت‌نام"}</h2>
+            <h2 class="title-md">${loggedIn ? t("تأیید خرید") : t("ثبت‌نام")}</h2>
             ${
               loggedIn
                 ? `<p class="muted">خرید روی حساب ${UI.escapeHtml(SJ.coachName())} ثبت می‌شود.</p>`
                 : `<label class="field">
-                    <span>نام</span>
+                    <span>${t("نام")}</span>
                     <input id="checkout-first" value="${UI.escapeHtml(firstName)}" required />
                   </label>
                   <label class="field">
-                    <span>نام خانوادگی</span>
+                    <span>${t("نام خانوادگی")}</span>
                     <input id="checkout-last" value="${UI.escapeHtml(lastName)}" required />
                   </label>
                   <label class="field">
-                    <span>شماره همراه</span>
+                    <span>${t("شماره همراه")}</span>
                     <input id="checkout-phone" value="${UI.escapeHtml(phone)}" inputmode="numeric" required />
                   </label>
                   <label class="checkbox-row">
                     <input type="checkbox" id="checkout-terms" checked />
-                    <span>قوانین استفاده ${PLATFORM.name} را می‌پذیرم.</span>
+                    <span>${t("قوانین استفاده را می‌پذیرم.")}</span>
                   </label>`
             }
             <div id="checkout-error" class="checkout-error"></div>
-            <button type="submit" class="btn-primary btn-block">تکمیل خرید</button>
+            <button type="submit" class="btn-primary btn-block">${t("تکمیل خرید")}</button>
           </form>
         </div>
         ${UI.designerCredit()}
