@@ -176,25 +176,13 @@ const UI = (() => {
 
   const COACH_NAV = [
     { hash: "#/app", label: "کاکپیت" },
-    {
-      id: "club",
-      label: "باشگاه",
-      children: [
-        { hash: "#/app/students", label: "شاگردان" },
-        { hash: "#/app/attendance", label: "حضور و غیاب" },
-        { hash: "#/app/sessions", label: "جلسات" },
-      ],
-    },
-    {
-      id: "training",
-      label: "تمرین",
-      children: [
-        { hash: "#/app/workout", label: "تمرین‌نویسی" },
-        { hash: "#/app/biomech", label: "آنالیز بیومکانیک", pro: true },
-        { hash: "#/app/vault", label: "آرشیو متدولوژی", pro: true },
-      ],
-    },
+    { hash: "#/app/students", label: "شاگردان" },
+    { hash: "#/app/attendance", label: "حضور و غیاب" },
+    { hash: "#/app/sessions", label: "جلسات" },
+    { hash: "#/app/workout", label: "تمرین‌نویسی" },
+    { hash: "#/app/biomech", label: "آنالیز بیومکانیک", pro: true },
     { hash: "#/app/finance", label: "مالی", pro: true },
+    { hash: "#/app/vault", label: "آرشیو متدولوژی", pro: true },
   ];
 
   function navItemActive(item, activeHash) {
@@ -224,19 +212,7 @@ const UI = (() => {
   }
 
   function renderCoachNav(activeHash) {
-    return COACH_NAV.map((item) => {
-      if (!item.children) return navButton(item, activeHash);
-      const open = item.children.some((child) => navItemActive(child, activeHash));
-      return `
-        <div class="nav-group${open ? " is-current" : ""}" data-group="${item.id}">
-          <button class="nav-group-btn" data-action="nav:menu" data-group="${item.id}" aria-expanded="false">
-            ${t(item.label)} <span class="nav-caret">▾</span>
-          </button>
-          <div class="nav-submenu" role="menu">
-            ${item.children.map((child) => navButton(child, activeHash)).join("")}
-          </div>
-        </div>`;
-    }).join("");
+    return COACH_NAV.map((item) => navButton(item, activeHash)).join("");
   }
 
   function shell(activeHash, content) {
@@ -251,31 +227,34 @@ const UI = (() => {
       : `<span class="badge badge-warn">${t("اقتصادی")}</span>`;
     return `
       ${ghostBanner}
-      <header class="topbar">
-        <div class="topbar-inner">
-          <button class="brand" data-action="go" data-hash="#/app">
-            <span class="brand-mark">🏊</span>
-            <span>${PLATFORM.name}</span>
-          </button>
-          <nav class="nav" aria-label="${t("صفحات مربی")}">
-            ${renderCoachNav(activeHash)}
-          </nav>
-          <div class="topbar-actions">
-            ${prefSwitch()}
-            <div class="nav-group nav-group-account" data-group="account">
-              <button class="nav-group-btn" data-action="nav:menu" data-group="account" aria-expanded="false">
-                <span class="account-label">${escapeHtml(SJ.coachName())}</span>
-                ${planBadge} <span class="nav-caret">▾</span>
-              </button>
-              <div class="nav-submenu" role="menu">
-                <button data-action="go" data-hash="#/app/profile" ${activeHash === "#/app/profile" ? 'aria-current="page"' : ""}>${t("حساب من")}</button>
-                <button data-action="auth:logout">${t("خروج")}</button>
+      <div class="panel-chrome">
+        <header class="topbar topbar-panel">
+          <div class="topbar-inner">
+            <button class="brand" data-action="go" data-hash="#/app">
+              <span class="brand-mark">🏊</span>
+              <span>${PLATFORM.name}</span>
+            </button>
+            <div class="topbar-actions">
+              ${prefSwitch()}
+              <div class="nav-group nav-group-account" data-group="account">
+                <button class="nav-group-btn" data-action="nav:menu" data-group="account" aria-expanded="false">
+                  <span class="account-label">${escapeHtml(SJ.coachName())}</span>
+                  ${planBadge} <span class="nav-caret">▾</span>
+                </button>
+                <div class="nav-submenu" role="menu">
+                  <button data-action="go" data-hash="#/app/profile" ${activeHash === "#/app/profile" ? 'aria-current="page"' : ""}>${t("حساب من")}</button>
+                  <button data-action="auth:logout">${t("خروج")}</button>
+                </div>
               </div>
             </div>
           </div>
-          <button class="nav-toggle" data-action="nav:toggle" aria-expanded="false" aria-label="باز کردن منو">☰</button>
-        </div>
-      </header>
+        </header>
+        <nav class="panel-nav" aria-label="${t("صفحات مربی")}">
+          <div class="panel-nav-inner">
+            ${renderCoachNav(activeHash)}
+          </div>
+        </nav>
+      </div>
       <main class="page">${content}</main>
       ${designerCredit()}`;
   }

@@ -393,6 +393,56 @@ textarea:focus {
   gap: 0.25rem;
 }
 
+.panel-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.panel-chrome .topbar {
+  position: static;
+}
+
+.panel-nav {
+  background: rgba(244, 247, 251, 0.96);
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-nav-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0.45rem max(1.25rem, env(safe-area-inset-right)) 0.55rem max(1.25rem, env(safe-area-inset-left));
+}
+
+.panel-nav-inner::-webkit-scrollbar {
+  display: none;
+}
+
+.panel-nav button {
+  flex: 0 0 auto;
+  background: transparent;
+  color: var(--slate);
+  font-weight: 700;
+  font-size: 0.92rem;
+  min-height: 0;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.panel-nav button:hover {
+  background: #eaf1fb;
+}
+
+.panel-nav button[aria-current="page"] {
+  background: var(--navy);
+  color: var(--white);
+}
+
 .nav button,
 .nav-group-btn {
   background: transparent;
@@ -1435,8 +1485,13 @@ button.plan-chip {
     gap: 1.25rem;
   }
 
-  button:not(.btn-quiet):not(.nav button):not(.tabs button):not(.brand):not(.nav-toggle):not(.toggle-group button):not(.student-row):not(.pref-btn) {
+  button:not(.btn-quiet):not(.nav button):not(.panel-nav button):not(.tabs button):not(.brand):not(.nav-toggle):not(.toggle-group button):not(.student-row):not(.pref-btn) {
     min-height: 44px;
+  }
+
+  .topbar-panel .topbar-inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "brand actions";
   }
 }
 
@@ -1603,9 +1658,24 @@ html[data-theme="dark"] body {
   color: #e8eef6;
 }
 
-html[data-theme="dark"] .topbar {
+html[data-theme="dark"] .topbar,
+html[data-theme="dark"] .panel-nav {
   background: rgba(7, 17, 30, 0.92);
   border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="dark"] .panel-nav button {
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .panel-nav button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+html[data-theme="dark"] .panel-nav button[aria-current="page"] {
+  background: #fff;
+  color: #0b192c;
 }
 
 html[data-theme="dark"] .card,
