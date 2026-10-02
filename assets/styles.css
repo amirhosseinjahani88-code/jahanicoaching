@@ -1408,10 +1408,30 @@ button.plan-chip {
   }
 
   .panel-nav button {
-    font-size: 0.78rem;
-    font-weight: 800;
-    padding: 0.5rem 0.78rem;
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    height: 2.55rem;
+    padding: 0;
     color: #475569;
+  }
+
+  .dock-icon {
+    width: 1.35rem;
+    height: 1.35rem;
+    display: block;
+  }
+
+  .panel-nav button .dock-icon + .dock-icon {
+    position: absolute;
+    width: 0.72rem;
+    height: 0.72rem;
+    top: 0.28rem;
+    inset-inline-end: 0.28rem;
+    padding: 0.08rem;
+    border-radius: 999px;
+    background: inherit;
   }
 
   .panel-nav button[aria-current="page"] {

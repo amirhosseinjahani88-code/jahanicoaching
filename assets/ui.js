@@ -175,15 +175,30 @@ const UI = (() => {
   /* ---------- چیدمان ---------- */
 
   const COACH_NAV = [
-    { hash: "#/app", label: "کاکپیت" },
-    { hash: "#/app/students", label: "شاگردان" },
-    { hash: "#/app/attendance", label: "حضور و غیاب" },
-    { hash: "#/app/sessions", label: "جلسات" },
-    { hash: "#/app/workout", label: "تمرین‌نویسی" },
-    { hash: "#/app/biomech", label: "آنالیز بیومکانیک", pro: true },
-    { hash: "#/app/finance", label: "مالی", pro: true },
-    { hash: "#/app/vault", label: "آرشیو متدولوژی", pro: true },
+    { hash: "#/app", label: "کاکپیت", icon: "cockpit" },
+    { hash: "#/app/students", label: "شاگردان", icon: "swimmers" },
+    { hash: "#/app/attendance", label: "حضور و غیاب", icon: "attendance" },
+    { hash: "#/app/sessions", label: "جلسات", icon: "sessions" },
+    { hash: "#/app/workout", label: "تمرین‌نویسی", icon: "workout" },
+    { hash: "#/app/biomech", label: "آنالیز بیومکانیک", icon: "biomech", pro: true },
+    { hash: "#/app/finance", label: "مالی", icon: "finance", pro: true },
+    { hash: "#/app/vault", label: "آرشیو متدولوژی", icon: "vault", pro: true },
   ];
+
+  function navIcon(name) {
+    const paths = {
+      cockpit: `<rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="4.5" rx="1.6"/><rect x="14" y="10.5" width="7" height="10.5" rx="1.6"/><rect x="3" y="13" width="7" height="8" rx="1.6"/>`,
+      swimmers: `<circle cx="9" cy="8" r="2.7"/><circle cx="16" cy="9" r="2"/><path d="M3.8 19c.5-2.6 2.6-4 5.2-4s4.7 1.4 5.2 4"/><path d="M14.2 15c1.5-.4 3 .2 4 1.6.5.7.9 1.6 1 2.4"/>`,
+      attendance: `<rect x="4" y="3.5" width="16" height="17" rx="2.4"/><path d="M8 12.2l2.4 2.4 5.2-5.4"/>`,
+      sessions: `<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3.2v3.2M16 3.2v3.2M3.5 10h17"/>`,
+      workout: `<path d="M4 16c1.8 0 1.8-2 3.6-2s1.8 2 3.6 2 1.8-2 3.6-2 1.8 2 3.6 2 1.6-2 3.6-2"/><path d="M4 20c1.8 0 1.8-2 3.6-2s1.8 2 3.6 2 1.8-2 3.6-2 1.8 2 3.6 2 1.6-2 3.6-2"/><circle cx="17.5" cy="6.5" r="2.2"/>`,
+      biomech: `<path d="M3 16.5 8 10l4 3.2 4.2-6.2L21 11"/>`,
+      finance: `<rect x="3" y="6" width="18" height="12.5" rx="2"/><path d="M3 10.2h18M7 15h4"/>`,
+      vault: `<path d="M5 4.5h12.5A2.5 2.5 0 0 1 20 7v12.5H7.2A2.2 2.2 0 0 0 5 21.7z"/><path d="M5 4.5A2.2 2.2 0 0 1 7.2 6.7H20"/>`,
+      lock: `<rect x="6" y="11" width="12" height="8" rx="1.6"/><path d="M8.5 11V8.2a3.5 3.5 0 0 1 7 0V11"/>`,
+    };
+    return `<svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || ""}</svg>`;
+  }
 
   function navItemActive(item, activeHash) {
     if (item.hash === "#/app") return activeHash === "#/app";
@@ -212,7 +227,12 @@ const UI = (() => {
   }
 
   function renderCoachNav(activeHash) {
-    return COACH_NAV.map((item) => navButton(item, activeHash)).join("");
+    return COACH_NAV.map((item) => {
+      const locked = item.pro && !SJ.isPro();
+      const current = navItemActive(item, activeHash);
+      const label = t(item.label);
+      return `<button data-action="go" data-hash="${item.hash}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" ${current ? 'aria-current="page"' : ""}>${navIcon(item.icon)}${locked ? navIcon("lock") : ""}</button>`;
+    }).join("");
   }
 
   function renderDesktopNav(activeHash) {
