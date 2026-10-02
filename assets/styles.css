@@ -403,9 +403,14 @@ textarea:focus {
   position: static;
 }
 
+.brand-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .panel-nav {
-  background: rgba(244, 247, 251, 0.96);
-  border-bottom: 1px solid var(--line);
+  display: none;
 }
 
 .panel-nav-inner {
@@ -1322,14 +1327,67 @@ button.plan-chip {
     align-items: stretch;
   }
 
-  .nav-group {
+  .nav .nav-group,
+  .nav .nav-group-btn {
     width: 100%;
   }
 
-  .nav-group-btn {
-    width: 100%;
+  .nav .nav-group-btn {
     justify-content: space-between;
     border-radius: 12px;
+  }
+
+  .topbar-panel .topbar-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 0.35rem;
+    column-gap: 0.5rem;
+  }
+
+  .topbar-panel .brand {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .topbar-panel .brand-name {
+    flex: 1 1 auto;
+  }
+
+  .topbar-panel .topbar-actions {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    min-width: 0;
+    justify-content: space-between;
+  }
+
+  .topbar-panel .account-label {
+    max-width: 11rem;
+  }
+
+  .topbar-panel .nav-group-account .badge {
+    display: none;
+  }
+
+  .panel-app {
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  }
+
+  .panel-app .page {
+    padding-bottom: 1.25rem;
+  }
+
+  .panel-nav {
+    display: block;
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 30;
+    background: rgba(244, 247, 251, 0.98);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -8px 24px rgba(11, 25, 44, 0.08);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .nav .nav-submenu {
@@ -1370,6 +1428,11 @@ button.plan-chip {
 
   .page {
     padding: 1.15rem max(0.9rem, env(safe-area-inset-left)) calc(3.25rem + env(safe-area-inset-bottom)) max(0.9rem, env(safe-area-inset-right));
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
   }
 
   .card,
@@ -1489,10 +1552,6 @@ button.plan-chip {
     min-height: 44px;
   }
 
-  .topbar-panel .topbar-inner {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "brand actions";
-  }
 }
 
 @media (max-width: 420px) {
@@ -1658,10 +1717,15 @@ html[data-theme="dark"] body {
   color: #e8eef6;
 }
 
-html[data-theme="dark"] .topbar,
-html[data-theme="dark"] .panel-nav {
+html[data-theme="dark"] .topbar {
   background: rgba(7, 17, 30, 0.92);
   border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="dark"] .panel-nav {
+  background: #07111e;
+  border-top-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
 }
 
 html[data-theme="dark"] .panel-nav button {

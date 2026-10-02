@@ -215,6 +215,46 @@ const UI = (() => {
     return COACH_NAV.map((item) => navButton(item, activeHash)).join("");
   }
 
+  function renderDesktopNav(activeHash) {
+    const groups = [
+      { hash: "#/app", label: "کاکپیت" },
+      {
+        id: "club",
+        label: "باشگاه",
+        children: [
+          { hash: "#/app/students", label: "شاگردان" },
+          { hash: "#/app/attendance", label: "حضور و غیاب" },
+          { hash: "#/app/sessions", label: "جلسات" },
+        ],
+      },
+      {
+        id: "training",
+        label: "تمرین",
+        children: [
+          { hash: "#/app/workout", label: "تمرین‌نویسی" },
+          { hash: "#/app/biomech", label: "آنالیز بیومکانیک", pro: true },
+          { hash: "#/app/vault", label: "آرشیو متدولوژی", pro: true },
+        ],
+      },
+      { hash: "#/app/finance", label: "مالی", pro: true },
+    ];
+    return groups
+      .map((item) => {
+        if (!item.children) return navButton(item, activeHash);
+        const open = item.children.some((child) => navItemActive(child, activeHash));
+        return `
+          <div class="nav-group${open ? " is-current" : ""}" data-group="${item.id}">
+            <button class="nav-group-btn" data-action="nav:menu" data-group="${item.id}" aria-expanded="false">
+              ${t(item.label)} <span class="nav-caret">▾</span>
+            </button>
+            <div class="nav-submenu" role="menu">
+              ${item.children.map((child) => navButton(child, activeHash)).join("")}
+            </div>
+          </div>`;
+      })
+      .join("");
+  }
+
   function shell(activeHash, content) {
     const ghostBanner = SJ.isGhost()
       ? `<div class="ghost-banner">
@@ -227,36 +267,41 @@ const UI = (() => {
       : `<span class="badge badge-warn">${t("اقتصادی")}</span>`;
     return `
       ${ghostBanner}
-      <div class="panel-chrome">
-        <header class="topbar topbar-panel">
-          <div class="topbar-inner">
-            <button class="brand" data-action="go" data-hash="#/app">
-              <span class="brand-mark">🏊</span>
-              <span>${PLATFORM.name}</span>
-            </button>
-            <div class="topbar-actions">
-              ${prefSwitch()}
-              <div class="nav-group nav-group-account" data-group="account">
-                <button class="nav-group-btn" data-action="nav:menu" data-group="account" aria-expanded="false">
-                  <span class="account-label">${escapeHtml(SJ.coachName())}</span>
-                  ${planBadge} <span class="nav-caret">▾</span>
-                </button>
-                <div class="nav-submenu" role="menu">
-                  <button data-action="go" data-hash="#/app/profile" ${activeHash === "#/app/profile" ? 'aria-current="page"' : ""}>${t("حساب من")}</button>
-                  <button data-action="auth:logout">${t("خروج")}</button>
+      <div class="panel-app">
+        <div class="panel-chrome">
+          <header class="topbar topbar-panel">
+            <div class="topbar-inner">
+              <button class="brand" data-action="go" data-hash="#/app">
+                <span class="brand-mark">🏊</span>
+                <span class="brand-name">${PLATFORM.name}</span>
+              </button>
+              <nav class="nav" aria-label="${t("صفحات مربی")}">
+                ${renderDesktopNav(activeHash)}
+              </nav>
+              <div class="topbar-actions">
+                ${prefSwitch()}
+                <div class="nav-group nav-group-account" data-group="account">
+                  <button class="nav-group-btn" data-action="nav:menu" data-group="account" aria-expanded="false">
+                    <span class="account-label">${escapeHtml(SJ.coachName())}</span>
+                    ${planBadge} <span class="nav-caret">▾</span>
+                  </button>
+                  <div class="nav-submenu" role="menu">
+                    <button data-action="go" data-hash="#/app/profile" ${activeHash === "#/app/profile" ? 'aria-current="page"' : ""}>${t("حساب من")}</button>
+                    <button data-action="auth:logout">${t("خروج")}</button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </header>
+          </header>
+        </div>
+        <main class="page">${content}</main>
+        ${designerCredit()}
         <nav class="panel-nav" aria-label="${t("صفحات مربی")}">
           <div class="panel-nav-inner">
             ${renderCoachNav(activeHash)}
           </div>
         </nav>
-      </div>
-      <main class="page">${content}</main>
-      ${designerCredit()}`;
+      </div>`;
   }
 
   function publicShell(content, { dark = false } = {}) {

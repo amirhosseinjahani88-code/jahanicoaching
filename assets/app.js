@@ -110,7 +110,9 @@ const APP = (() => {
     root.innerHTML = route();
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
     const currentNav = root.querySelector(".panel-nav [aria-current='page']");
-    if (currentNav) currentNav.scrollIntoView({ inline: "nearest", block: "nearest" });
+    if (currentNav && currentNav.offsetParent) {
+      currentNav.scrollIntoView({ inline: "nearest", block: "nearest" });
+    }
     if (focusAfterRender) {
       const node = document.getElementById(focusAfterRender);
       if (node) {
