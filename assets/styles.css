@@ -347,6 +347,10 @@ textarea:focus {
   align-items: center;
 }
 
+.mobile-menu {
+  display: none;
+}
+
 .nav-toggle {
   display: none;
   width: 44px;
@@ -1371,7 +1375,56 @@ button.plan-chip {
   }
 
   .panel-app {
-    padding-bottom: calc(5.6rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(6.4rem + env(safe-area-inset-bottom));
+  }
+
+  .desk-nav {
+    display: none !important;
+  }
+
+  .mobile-menu {
+    display: none;
+    flex: 1 1 100%;
+    gap: 0.2rem;
+    padding-top: 0.35rem;
+  }
+
+  .topbar.nav-open .mobile-menu {
+    display: grid;
+  }
+
+  .menu-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 14px;
+    padding: 0.72rem 0.85rem;
+    background: transparent;
+    color: inherit;
+    font-weight: 700;
+    text-align: start;
+  }
+
+  .menu-link .dock-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex: 0 0 auto;
+  }
+
+  .menu-link > span:first-of-type {
+    flex: 1;
+  }
+
+  .menu-lock .dock-icon {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  .menu-link[aria-current="page"] {
+    background: var(--navy);
+    color: #fff;
   }
 
   .panel-app .page {
@@ -1410,11 +1463,22 @@ button.plan-chip {
   .panel-nav button {
     position: relative;
     flex: 1 1 0;
+    flex-direction: column;
     min-width: 0;
     width: auto;
-    height: 2.55rem;
-    padding: 0;
+    height: auto;
+    gap: 0.12rem;
+    padding: 0.42rem 0.2rem;
     color: #475569;
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1.15;
+  }
+
+  .dock-label {
+    max-width: 100%;
+    text-align: center;
+    white-space: normal;
   }
 
   .dock-icon {
@@ -1796,6 +1860,11 @@ html[data-theme="dark"] .panel-nav button[aria-current="page"] {
   background: linear-gradient(110deg, #0a84ff, #00d2ff);
   color: #fff;
   box-shadow: 0 6px 18px rgba(0, 180, 220, 0.35);
+}
+
+html[data-theme="dark"] .menu-link[aria-current="page"] {
+  background: #fff;
+  color: #0b192c;
 }
 
 html[data-theme="dark"] .card,

@@ -966,6 +966,29 @@ const CoachViews = (() => {
     return UI.shell("#/app/profile", body);
   }
 
+  function settingsPage() {
+    const prefs = Prefs.get();
+    const body = `
+      <div class="stack-lg">
+        ${UI.sectionTitle("تنظیمات", "زبان و ظاهر برنامه.", "#/app")}
+        <section class="card stack">
+          <h2 class="title-md">${t("زبان")}</h2>
+          <div class="pref-switch" role="group" aria-label="${t("زبان")}">
+            <button type="button" class="pref-btn ${prefs.lang === "fa" ? "is-on" : ""}" data-action="pref:lang" data-lang="fa">فا</button>
+            <button type="button" class="pref-btn ${prefs.lang === "en" ? "is-on" : ""}" data-action="pref:lang" data-lang="en">EN</button>
+          </div>
+        </section>
+        <section class="card stack">
+          <h2 class="title-md">${t("ظاهر")}</h2>
+          <div class="pref-switch" role="group" aria-label="${t("ظاهر")}">
+            <button type="button" class="pref-btn ${prefs.theme === "light" ? "is-on" : ""}" data-action="pref:theme" data-theme="light">${t("روشن")}</button>
+            <button type="button" class="pref-btn ${prefs.theme === "dark" ? "is-on" : ""}" data-action="pref:theme" data-theme="dark">${t("تیره")}</button>
+          </div>
+        </section>
+      </div>`;
+    return UI.shell("#/app/settings", body);
+  }
+
   return {
     cockpit,
     attendance,
@@ -977,5 +1000,6 @@ const CoachViews = (() => {
     financePage,
     vaultPage,
     profilePage,
+    settingsPage,
   };
 })();

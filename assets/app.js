@@ -98,6 +98,7 @@ const APP = (() => {
       if (hash === "#/app/finance") return CoachViews.financePage();
       if (hash === "#/app/vault") return CoachViews.vaultPage();
       if (hash === "#/app/profile") return CoachViews.profilePage();
+      if (hash === "#/app/settings") return CoachViews.settingsPage();
       return CoachViews.cockpit();
     }
 
@@ -370,7 +371,7 @@ APP.action("nav:toggle", (_data, trigger) => {
   if (trigger) {
     trigger.setAttribute("aria-expanded", open ? "true" : "false");
     trigger.textContent = open ? "✕" : "☰";
-    trigger.setAttribute("aria-label", open ? "بستن منو" : "باز کردن منو");
+    trigger.setAttribute("aria-label", open ? t("بستن منو") : t("باز کردن منو"));
   }
 });
 
