@@ -124,8 +124,8 @@ const UI = (() => {
             <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="#fff" stroke="#0a84ff" stroke-width="3">
               <title>${escapeHtml(p.label)}: ${secs(p.v)} ${escapeHtml(unit)}</title>
             </circle>
-            <text x="${p.x.toFixed(1)}" y="${(p.y - 14).toFixed(1)}" text-anchor="middle" font-size="13" fill="#0b192c">${secs(p.v)}</text>
-            <text x="${p.x.toFixed(1)}" y="${height - padY + 18}" text-anchor="middle" font-size="12" fill="#64748b">${escapeHtml(p.label)}</text>
+            <text x="${p.x.toFixed(1)}" y="${(p.y - 14).toFixed(1)}" text-anchor="middle" font-size="13" fill="currentColor">${secs(p.v)}</text>
+            <text x="${p.x.toFixed(1)}" y="${height - padY + 18}" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.72">${escapeHtml(p.label)}</text>
           </g>`
           )
           .join("")}
@@ -154,7 +154,7 @@ const UI = (() => {
                 return `<rect x="${x.toFixed(1)}" y="${(height - padY - h).toFixed(1)}" width="${(barW - 3).toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="${s.color}"><title>${escapeHtml(s.name)} ${escapeHtml(label)}: ${fa(value)}</title></rect>`;
               })
               .join("");
-            return `${bars}<text x="${baseX.toFixed(1)}" y="${height - padY + 18}" text-anchor="middle" font-size="12" fill="#64748b">${escapeHtml(label)}</text>`;
+            return `${bars}<text x="${baseX.toFixed(1)}" y="${height - padY + 18}" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.72">${escapeHtml(label)}</text>`;
           })
           .join("")}
       </svg>
