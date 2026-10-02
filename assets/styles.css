@@ -1371,7 +1371,7 @@ button.plan-chip {
   }
 
   .panel-app {
-    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(5.6rem + env(safe-area-inset-bottom));
   }
 
   .panel-app .page {
@@ -1379,15 +1379,45 @@ button.plan-chip {
   }
 
   .panel-nav {
-    display: block;
+    display: flex;
+    justify-content: center;
     position: fixed;
     inset-inline: 0;
-    bottom: 0;
+    bottom: calc(0.7rem + env(safe-area-inset-bottom));
     z-index: 30;
-    background: rgba(244, 247, 251, 0.98);
-    border-top: 1px solid var(--line);
-    box-shadow: 0 -8px 24px rgba(11, 25, 44, 0.08);
-    padding-bottom: env(safe-area-inset-bottom);
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    padding: 0 0.85rem;
+    pointer-events: none;
+  }
+
+  .panel-nav-inner {
+    pointer-events: auto;
+    width: min(100%, 28rem);
+    max-width: 100%;
+    margin: 0;
+    gap: 0.15rem;
+    padding: 0.32rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    box-shadow: 0 14px 36px rgba(11, 25, 44, 0.18), 0 2px 8px rgba(11, 25, 44, 0.06);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .panel-nav button {
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 0.5rem 0.78rem;
+    color: #475569;
+  }
+
+  .panel-nav button[aria-current="page"] {
+    background: linear-gradient(110deg, #0a84ff, #00d2ff);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(10, 132, 255, 0.38);
   }
 
   .nav .nav-submenu {
@@ -1723,9 +1753,14 @@ html[data-theme="dark"] .topbar {
 }
 
 html[data-theme="dark"] .panel-nav {
-  background: #07111e;
-  border-top-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .panel-nav-inner {
+  background: rgba(10, 22, 40, 0.72);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 html[data-theme="dark"] .panel-nav button {
@@ -1738,8 +1773,9 @@ html[data-theme="dark"] .panel-nav button:hover {
 }
 
 html[data-theme="dark"] .panel-nav button[aria-current="page"] {
-  background: #fff;
-  color: #0b192c;
+  background: linear-gradient(110deg, #0a84ff, #00d2ff);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(0, 180, 220, 0.35);
 }
 
 html[data-theme="dark"] .card,
