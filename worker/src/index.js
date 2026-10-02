@@ -37,15 +37,18 @@ const SYSTEM_PROMPT = `تو یک مربی ارشد شنا با دانش متدو
 - اعداد داخل «detail» را با رقم فارسی بنویس، ولی مقادیر عددی JSON مثل meters و minutes را با رقم انگلیسی بده.
 - نکات فنی باید مشخص و قابل اجرا لب استخر باشند، نه کلی‌گویی.`;
 
-function corsHeaders(request, env) {
+function allowedOrigin(request, env) {
   const allowed = (env.ALLOWED_ORIGINS || DEFAULT_ORIGINS.join(","))
     .split(",")
     .map((o) => o.trim())
     .filter(Boolean);
   const origin = request.headers.get("Origin") || "";
-  const ok = allowed.includes(origin);
+  return allowed.includes(origin) ? origin : "";
+}
+
+function corsHeaders(request, env) {
   return {
-    "Access-Control-Allow-Origin": ok ? origin : allowed[0],
+    "Access-Control-Allow-Origin": allowedOrigin(request, env) || DEFAULT_ORIGINS[0],
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
@@ -138,6 +141,86 @@ function normalize(raw) {
   };
 }
 
+async function callModel(env, { system, user, image }) {
+  const userMessage = image
+    ? {
+        role: "user",
+        content: [
+          { type: "text", text: user },
+          { type: "image_url", image_url: { url: image } },
+        ],
+      }
+    : { role: "user", content: user };
+
+  const upstream = await fetch(`${env.AVALAI_BASE_URL || "https://api.avalai.ir/v1"}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.AVALAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: env.AI_MODEL || MODEL_FALLBACK,
+      temperature: 0.5,
+      max_tokens: 1800,
+      messages: [
+        { role: "system", content: system },
+        userMessage,
+      ],
+    }),
+  });
+
+  if (!upstream.ok) {
+    console.log("upstream error", upstream.status);
+    return { error: true, status: upstream.status };
+  }
+
+  const payload = await upstream.json();
+  return {
+    content: payload?.choices?.[0]?.message?.content || "",
+    model: payload?.model || env.AI_MODEL || MODEL_FALLBACK,
+  };
+}
+
+function readAiBody(body) {
+  let system = String(body?.system || SYSTEM_PROMPT).slice(0, 6000);
+  let user = String(body?.user || body?.brief || "").trim();
+  let image = String(body?.image || "");
+  if (user.length > 8000) user = user.slice(0, 8000);
+  if (!image.startsWith("data:") || image.length > 3500000) image = "";
+  if (!system) system = SYSTEM_PROMPT;
+  return { system, user, image };
+}
+
+async function handleAi(request, env, cors) {
+  if (!env.AVALAI_API_KEY) {
+    return json({ error: "config", message: "کلید سرویس روی ورکر تنظیم نشده است." }, 500, cors);
+  }
+
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  if (rateLimited(ip)) {
+    return json({ error: "rate_limit", message: "تعداد درخواست‌ها زیاد شد؛ کمی بعد دوباره تلاش کنید." }, 429, cors);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return json({ error: "bad_request", message: "بدنه درخواست JSON معتبر نیست." }, 400, cors);
+  }
+
+  const { system, user, image } = readAiBody(body);
+  if (user.length < 2) {
+    return json({ error: "bad_request", message: "متن درخواست خیلی کوتاه است." }, 400, cors);
+  }
+
+  const result = await callModel(env, { system, user, image });
+  if (result.error) {
+    return json({ error: "upstream", status: result.status, message: "سرویس هوش مصنوعی پاسخ نداد." }, 502, cors);
+  }
+
+  return json({ content: result.content, model: result.model }, 200, cors);
+}
+
 async function handleWorkout(request, env, cors) {
   if (!env.AVALAI_API_KEY) {
     return json({ error: "config", message: "کلید سرویس روی ورکر تنظیم نشده است." }, 500, cors);
@@ -160,35 +243,12 @@ async function handleWorkout(request, env, cors) {
     return json({ error: "bad_request", message: "توضیح تمرین خیلی کوتاه است." }, 400, cors);
   }
 
-  const upstream = await fetch(`${env.AVALAI_BASE_URL || "https://api.avalai.ir/v1"}/chat/completions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.AVALAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: env.AI_MODEL || MODEL_FALLBACK,
-      temperature: 0.6,
-      max_tokens: 1600,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: brief },
-      ],
-    }),
-  });
-
-  if (!upstream.ok) {
-    const detail = await upstream.text();
-    console.log("upstream error", upstream.status, detail.slice(0, 500));
-    return json(
-      { error: "upstream", status: upstream.status, message: "سرویس هوش مصنوعی پاسخ نداد." },
-      502,
-      cors
-    );
+  const result = await callModel(env, { system: SYSTEM_PROMPT, user: brief, image: "" });
+  if (result.error) {
+    return json({ error: "upstream", status: result.status, message: "سرویس هوش مصنوعی پاسخ نداد." }, 502, cors);
   }
 
-  const payload = await upstream.json();
-  const content = payload?.choices?.[0]?.message?.content;
+  const content = result.content;
   const workout = normalize(extractJson(content));
 
   if (!workout) {
@@ -196,7 +256,7 @@ async function handleWorkout(request, env, cors) {
     return json({ error: "parse", message: "خروجی مدل قابل استفاده نبود." }, 502, cors);
   }
 
-  return json({ workout, model: payload.model || env.AI_MODEL || MODEL_FALLBACK }, 200, cors);
+  return json({ workout, model: result.model }, 200, cors);
 }
 
 export default {
@@ -213,8 +273,12 @@ export default {
       return json({ ok: true, model: env.AI_MODEL || MODEL_FALLBACK, keySet: Boolean(env.AVALAI_API_KEY) }, 200, cors);
     }
 
-    if (url.pathname === "/api/workout" && request.method === "POST") {
+    if (request.method === "POST" && (url.pathname === "/api/ai" || url.pathname === "/api/workout")) {
+      if (!allowedOrigin(request, env)) {
+        return json({ error: "forbidden", message: "این آدرس فقط از سایت کوچینگ جهانی قابل استفاده است." }, 403, cors);
+      }
       try {
+        if (url.pathname === "/api/ai") return await handleAi(request, env, cors);
         return await handleWorkout(request, env, cors);
       } catch (err) {
         console.log("worker error", err?.stack || String(err));

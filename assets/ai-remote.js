@@ -1,4 +1,5 @@
-/* لایه اتصال به هوش مصنوعی واقعی — فقط وقتی localhost با serve.ps1 اجرا شود.
+/* لایه اتصال به هوش مصنوعی واقعی.
+   روی localhost پروکسی serve.ps1 است و روی گیت‌هاب پروکسی Cloudflare.
    اگر پروکسی نبود یا خطا داد، همان موتور محلی جایگزین می‌شود. */
 
 const AIRemote = (() => {
@@ -15,9 +16,10 @@ const AIRemote = (() => {
     try {
       const url = new URL(endpoint);
       const host = url.hostname.toLowerCase();
-      const loopback = host === "localhost" || host === "127.0.0.1" || host === "[::1]";
-      const github = host.endsWith(".github.io") || host === "github.io" || host === "github.com";
-      return loopback && !github;
+      const github = host.endsWith(".github.io") || host === "github.io" || host === "github.com" || host.endsWith(".githubusercontent.com");
+      const httpsProxy = url.protocol === "https:" && host.endsWith(".workers.dev");
+      const loopback = (url.protocol === "http:" || url.protocol === "https:") && (host === "localhost" || host === "127.0.0.1" || host === "[::1]");
+      return !github && (loopback || httpsProxy);
     } catch (_) {
       return false;
     }

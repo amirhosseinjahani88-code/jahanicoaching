@@ -10,5 +10,5 @@ When a requested change to this demo is finished and verified, commit it and pus
 - Remote: `https://github.com/amirhosseinjahani88-code/jahanicoaching.git`
 - Public site: `https://amirhosseinjahani88-code.github.io/jahanicoaching/`
 - Never commit `ai-key.local.txt`, `.env`, or API keys.
-- Real AI stays on localhost only. The public site must keep an empty `aiEndpoint`.
+- The public site calls the Cloudflare Worker proxy. Never put the AvalAI key in the repo or in `config.js`; it stays a Worker secret and in `ai-key.local.txt`.
 - Do not force-push.
