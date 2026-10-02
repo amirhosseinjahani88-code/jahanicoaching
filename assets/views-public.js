@@ -168,7 +168,7 @@ const PublicViews = (() => {
         <div class="page stack-lg">
           ${publicHeader()}
           <section class="stack">
-            <button class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="${loggedIn && SJ.hasPurchased() ? "#/app" : "#/"}">→ بازگشت</button>
+            <button class="btn-quiet" style="color:#baf4ff" data-action="nav:back">→ بازگشت</button>
             <h1 class="title-xl" style="color:#fff">تعرفه‌ها</h1>
             <p class="on-dark-muted">دو اشتراک سالانه برای مربی شنا.</p>
           </section>
@@ -225,7 +225,7 @@ const PublicViews = (() => {
           ${publicHeader()}
           <div class="auth-layout">
             <div class="stack auth-aside">
-              <button class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/">→ بازگشت</button>
+              <button class="btn-quiet" style="color:#baf4ff" data-action="nav:back">→ بازگشت</button>
               <h1 class="title-xl" style="color:#fff">ورود</h1>
               <p class="on-dark-muted">${PLATFORM.tagline}</p>
             </div>
@@ -254,7 +254,7 @@ const PublicViews = (() => {
           ${publicHeader()}
           <div class="auth-layout">
             <div class="stack auth-aside">
-              <button class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/auth">→ بازگشت به ورود</button>
+              <button class="btn-quiet" style="color:#baf4ff" data-action="nav:back">→ بازگشت</button>
               <h1 class="title-xl" style="color:#fff">ثبت‌نام</h1>
               <p class="on-dark-muted">${PLATFORM.tagline}</p>
             </div>
@@ -299,7 +299,7 @@ const PublicViews = (() => {
 
     return `
       <main class="page stack-lg">
-        ${UI.sectionTitle("سبد خرید", "این پرداخت فرضی است و هیچ پول واقعی کم نمی‌شود.", "#/pricing")}
+        ${UI.sectionTitle("سبد خرید", "این پرداخت فرضی است و هیچ پول واقعی کم نمی‌شود.", "@back")}
         <div class="two-col">
           <section class="card stack cart">
             <div class="space-between">

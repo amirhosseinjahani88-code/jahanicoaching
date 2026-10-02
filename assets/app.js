@@ -312,7 +312,34 @@ const APP = (() => {
 
 /* ---------- دکمه‌های عمومی ---------- */
 
-APP.action("go", (data) => UI.navigate(data.hash));
+APP.navStack = [];
+
+function currentHash() {
+  return window.location.hash || "#/";
+}
+
+function rememberHere() {
+  const here = currentHash();
+  const stack = APP.navStack;
+  if (stack[stack.length - 1] !== here) stack.push(here);
+  if (stack.length > 20) stack.shift();
+}
+
+APP.action("go", (data) => {
+  rememberHere();
+  UI.navigate(data.hash);
+});
+
+APP.action("nav:back", () => {
+  const here = currentHash();
+  let prev = "";
+  while (APP.navStack.length) {
+    prev = APP.navStack.pop();
+    if (prev && prev !== here) break;
+    prev = "";
+  }
+  UI.navigate(prev || "#/");
+});
 APP.action("modal:close", () => UI.closeModal());
 
 APP.action("nav:menu", (data, trigger) => {
@@ -341,6 +368,7 @@ APP.action("nav:toggle", (_data, trigger) => {
 
 APP.action("auth:logout", () => {
   SJ.logout();
+  APP.navStack = [];
   UI.toast("از حساب خارج شدید.");
   UI.navigate("#/");
 });
@@ -351,10 +379,12 @@ APP.action("admin:login", () => {
 });
 
 APP.action("auth:enter", () => {
+  rememberHere();
   UI.navigate("#/auth");
 });
 
 APP.action("plan:choose", (data) => {
+  rememberHere();
   const plan = data.plan === "essential" ? "essential" : "pro";
   if (!SJ.isLoggedIn()) {
     UI.navigate("#/auth");

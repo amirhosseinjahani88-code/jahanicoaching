@@ -277,6 +277,17 @@ const UI = (() => {
   function aiStatusCard() {
     const live = typeof AIRemote !== "undefined" && AIRemote.isEnabled();
     if (live) {
+      const local = /localhost|127\.0\.0\.1|\[::1\]/.test(String((window.SJ_CONFIG || {}).aiEndpoint || ""));
+      if (!local) {
+        return `
+        <section class="ai-status ai-status-live" role="status">
+          <div class="space-between">
+            <strong>هوش مصنوعی واقعی فعال است</strong>
+            <span class="badge badge-ok">AvalAI</span>
+          </div>
+          <p>درخواست‌ها از سایت عمومی به پروکسی می‌روند. کلید API داخل صفحه نیست.</p>
+        </section>`;
+      }
       return `
         <section class="ai-status ai-status-live" role="status">
           <div class="space-between">
@@ -320,7 +331,13 @@ const UI = (() => {
   function sectionTitle(title, subtitle, backHash) {
     return `
       <div class="stack" style="gap:.35rem">
-        ${backHash ? `<button class="btn-quiet" data-action="go" data-hash="${backHash}">→ بازگشت</button>` : ""}
+        ${
+          backHash === "@back"
+            ? `<button class="btn-quiet" data-action="nav:back">→ بازگشت</button>`
+            : backHash
+              ? `<button class="btn-quiet" data-action="go" data-hash="${backHash}">→ بازگشت</button>`
+              : ""
+        }
         <h1 class="title-xl">${title}</h1>
         ${subtitle ? `<p class="muted">${subtitle}</p>` : ""}
       </div>`;
