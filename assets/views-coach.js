@@ -33,8 +33,6 @@ const CoachViews = (() => {
           </button>
         </div>
 
-        ${UI.aiStatusCard()}
-
         <div class="grid">
           ${UI.kpi("شاگردان فعال", `${UI.fa(SJ.students().length)} شناگر`, "ورود به پرونده شاگردان", "", "#/app/students")}
           ${UI.kpi(
@@ -923,7 +921,6 @@ const CoachViews = (() => {
     const body = `
       <div class="stack-lg">
         ${UI.sectionTitle("حساب من", "اطلاعات مربی، پلن و مدیریت داده‌های دمو.", "#/app")}
-        ${UI.aiStatusCard()}
         <div class="two-col">
           <section class="card stack">
             <div class="row">

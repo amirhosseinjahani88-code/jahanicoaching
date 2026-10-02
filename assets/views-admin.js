@@ -48,6 +48,7 @@ const AdminViews = (() => {
     const body = `
       <div class="stack-lg">
         ${UI.sectionTitle("داشبورد هوش تجاری", "وضعیت درآمد، رشد مربیان و ریسک ریزش.")}
+        ${UI.aiStatusCard()}
 
         <div class="grid">
           ${UI.kpi("درآمد سالانه قراردادی", UI.millions(m.arr), `هدف سال اول: ${UI.millions(BUSINESS_TARGETS.totalRevenue)}`)}
