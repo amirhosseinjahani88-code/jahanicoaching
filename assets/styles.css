@@ -1244,6 +1244,10 @@ button.plan-chip {
     grid-area: toggle;
   }
 
+  .account-label {
+    max-width: 5.5rem;
+  }
+
   .nav {
     display: none;
     grid-area: nav;
@@ -1474,6 +1478,19 @@ button.plan-chip {
   .topbar.nav-open .nav {
     display: flex;
   }
+}
+
+.account-label {
+  max-width: 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.nav-group-account .nav-group-btn {
+  width: auto;
+  gap: 0.35rem;
 }
 
 .pref-switch {

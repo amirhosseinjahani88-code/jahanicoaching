@@ -77,6 +77,7 @@ const SJ = (() => {
     return {
       version: 1,
       session: { role: null, ghostFrom: null },
+      accounts: {},
       coach: null,
       attendance: seedAttendance(),
       payments: seedPayments(),
@@ -99,8 +100,18 @@ const SJ = (() => {
       if (!Array.isArray(parsed.workouts) || parsed.workouts.length === 0) {
         parsed.workouts = SAMPLE_WORKOUTS.map((w, i) => ({ ...w, id: i + 1 }));
       }
+      if (!parsed.accounts || typeof parsed.accounts !== "object" || Array.isArray(parsed.accounts)) {
+        parsed.accounts = {};
+      }
       if (parsed.coach && parsed.coach.plan && parsed.coach.purchased == null) {
         parsed.coach.purchased = true;
+      }
+      if (parsed.coach && parsed.coach.phone) {
+        const key = normalizePhone(parsed.coach.phone);
+        if (key) {
+          if (!parsed.accounts[key]) parsed.accounts[key] = parsed.coach;
+          parsed.coach = parsed.accounts[key];
+        }
       }
       return parsed;
     } catch (err) {
@@ -131,23 +142,27 @@ const SJ = (() => {
 
   function signup({ firstName, lastName, phone, password, plan }) {
     const normalized = normalizePhone(phone);
-    const same = hasAccount() && normalized === normalizePhone(state.coach.phone);
+    const existing = state.accounts[normalized];
+    if (existing && String(existing.password || "") !== String(password || "")) return "exists";
     const bought = plan === "pro" || plan === "essential";
-    const keepPurchase = same && state.coach.purchased;
-    state.coach = {
-      id: "c1",
+    const keepPurchase = !!(existing && existing.purchased);
+    const coach = {
+      id: existing && existing.id ? existing.id : `c-${normalized.slice(-4)}`,
       firstName,
       lastName,
       phone: normalized,
       password: String(password || ""),
-      plan: bought ? plan : keepPurchase ? state.coach.plan : null,
-      purchased: bought || keepPurchase,
-      since: same && state.coach.since ? state.coach.since : "۱۴۰۴/۰۶",
-      pool: "استخر قدس",
-      credential: "مورد تایید اساتید تراز اول شنا",
+      plan: bought ? plan : keepPurchase ? existing.plan : null,
+      purchased: bought || !!keepPurchase,
+      since: existing && existing.since ? existing.since : "۱۴۰۴/۰۶",
+      pool: existing && existing.pool ? existing.pool : "استخر قدس",
+      credential: existing && existing.credential ? existing.credential : "مورد تایید اساتید تراز اول شنا",
     };
+    state.accounts[normalized] = coach;
+    state.coach = coach;
     state.session = { role: "coach", ghostFrom: null };
     save();
+    return "ok";
   }
 
   function hasAccount() {
@@ -159,9 +174,10 @@ const SJ = (() => {
   }
 
   function login(phone, password) {
-    if (!hasAccount()) return "missing";
-    if (normalizePhone(phone) !== normalizePhone(state.coach.phone)) return "missing";
-    if (String(state.coach.password || "") !== String(password || "")) return "password";
+    const account = state.accounts[normalizePhone(phone)];
+    if (!account) return "missing";
+    if (String(account.password || "") !== String(password || "")) return "password";
+    state.coach = account;
     state.session = { role: "coach", ghostFrom: null };
     save();
     return "ok";
@@ -202,6 +218,11 @@ const SJ = (() => {
     if (!state.coach) return;
     state.coach.plan = next;
     state.coach.purchased = true;
+    const key = normalizePhone(state.coach.phone);
+    if (key && state.accounts[key]) {
+      state.accounts[key].plan = next;
+      state.accounts[key].purchased = true;
+    }
     save();
   }
 

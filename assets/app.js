@@ -268,7 +268,11 @@ const APP = (() => {
         errorBox.textContent = "تکرار رمز با رمز یکی نیست.";
         return;
       }
-      SJ.signup({ firstName, lastName, phone, password });
+      const signed = SJ.signup({ firstName, lastName, phone, password });
+      if (signed === "exists") {
+        errorBox.textContent = "این شماره قبلاً ثبت شده. با همان رمز وارد شوید.";
+        return;
+      }
       if (SJ.hasPurchased()) {
         UI.toast("وارد پنل شدید.");
         UI.navigate("#/app");

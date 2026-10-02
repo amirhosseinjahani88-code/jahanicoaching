@@ -294,9 +294,9 @@ const PublicViews = (() => {
     const loggedIn = SJ.isLoggedIn();
     const draft = APP.ui.checkoutDraft || {};
     const coach = loggedIn ? SJ.raw.coach : null;
-    const firstName = draft.firstName || (coach ? coach.firstName : "امیرحسین");
-    const lastName = draft.lastName || (coach ? coach.lastName : "جهانی");
-    const phone = draft.phone || (coach ? coach.phone : "09904703935");
+    const firstName = draft.firstName || (coach ? coach.firstName : "");
+    const lastName = draft.lastName || (coach ? coach.lastName : "");
+    const phone = draft.phone || (coach ? coach.phone : "");
 
     return `
       <main class="page stack-lg">

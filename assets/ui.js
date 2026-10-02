@@ -264,6 +264,7 @@ const UI = (() => {
             ${prefSwitch()}
             <div class="nav-group nav-group-account" data-group="account">
               <button class="nav-group-btn" data-action="nav:menu" data-group="account" aria-expanded="false">
+                <span class="account-label">${escapeHtml(SJ.coachName())}</span>
                 ${planBadge} <span class="nav-caret">▾</span>
               </button>
               <div class="nav-submenu" role="menu">
