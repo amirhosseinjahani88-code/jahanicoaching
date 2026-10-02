@@ -1,13 +1,6 @@
 /* صفحات عمومی: لندینگ، تعرفه‌ها، ورود و ثبت‌نام، پورتال اولیا. */
 
 const PublicViews = (() => {
-  const JOURNEY = [
-    { n: "۱", title: "جلسه را ببینید", text: "یک جمله بنویسید. تمرین همین‌جا ساخته می‌شود." },
-    { n: "۲", title: "وارد شوید", text: "شماره و رمز. اگر حساب ندارید، ثبت‌نام پایین فرم است." },
-    { n: "۳", title: "پلن را بردارید", text: "سبد خرید فقط وقتی باز می‌شود که هنوز نخریده باشید." },
-    { n: "۴", title: "به پنل بروید", text: "اگر پلن دارید، همان ورود شما را به پنل می‌برد." },
-  ];
-
   function publicHeader() {
     return `
       <header class="site-header site-nav">
@@ -35,20 +28,6 @@ const PublicViews = (() => {
       </footer>`;
   }
 
-  function journeyStrip() {
-    return `
-      <section class="journey" aria-label="مسیر مربی">
-        ${JOURNEY.map(
-          (step) => `
-          <article class="journey-step">
-            <span class="badge badge-cyan">${step.n}</span>
-            <strong>${step.title}</strong>
-            <p>${step.text}</p>
-          </article>`
-        ).join("")}
-      </section>`;
-  }
-
   function planCards() {
     const loggedIn = SJ.isLoggedIn();
     return `
@@ -69,7 +48,7 @@ const PublicViews = (() => {
                 ${plan.features.slice(0, 4).map((f) => `<li>${f}</li>`).join("")}
               </ul>
               <button class="${featured ? "btn-primary" : "btn-white"} btn-block" data-action="plan:choose" data-plan="${plan.id}">
-                ${owned ? "پلن فعال شما" : "انتخاب و رفتن به سبد خرید"}
+                ${owned ? "پلن شما" : "شروع"}
               </button>
             </article>`;
           })
@@ -90,7 +69,7 @@ const PublicViews = (() => {
             <div class="stack">
               <span class="badge badge-cyan">${PLATFORM.designerRole}: ${PLATFORM.designer}</span>
               <h1 class="title-xl" style="color:#fff">مربیگری شنا، بدون کاغذ.</h1>
-              <p class="on-dark-muted">تمرین، تحلیل و شهریه در یک جا. اول ببینید، بعد حساب بسازید، بعد پلن را بردارید.</p>
+              <p class="on-dark-muted">تمرین، تحلیل و شهریه در یک جا.</p>
               <div class="row hero-cta">
                 <button class="btn-primary" data-action="go" data-hash="#/auth/signup">شروع</button>
                 <button class="btn-white" data-action="auth:enter">ورود</button>
@@ -122,14 +101,12 @@ const PublicViews = (() => {
                     ${demo.sets
                       .map((s) => `<div class="demo-row"><span>${UI.escapeHtml(s.phase)}</span><span>${UI.escapeHtml(s.detail)}</span></div>`)
                       .join("")}
-                    <button class="btn-white btn-sm" data-action="auth:enter">ذخیره در پنل</button>
+                    <button class="btn-white btn-sm" data-action="auth:enter">ذخیره</button>
                   </div>`
                 : ""
             }
             </section>
           </section>
-
-          ${journeyStrip()}
 
           <section class="stack">
             <h2 class="title-lg" style="color:#fff">چه کار می‌کند</h2>
@@ -168,8 +145,8 @@ const PublicViews = (() => {
 
           <section class="closing">
             <div class="stack" style="gap:.25rem">
-              <strong style="color:#fff">آمادهٔ لب استخر؟</strong>
-              <p class="on-dark-muted">حساب بسازید. پلن را انتخاب کنید. پنل مال خودتان است.</p>
+              <strong style="color:#fff">مربیگری شنا، در یک جا.</strong>
+              <p class="on-dark-muted">${PLATFORM.tagline}</p>
             </div>
             <div class="row">
               <button class="btn-primary" data-action="go" data-hash="#/auth/signup">ثبت‌نام</button>
@@ -186,9 +163,6 @@ const PublicViews = (() => {
 
   function pricing() {
     const loggedIn = SJ.isLoggedIn();
-    const hint = loggedIn && !SJ.hasPurchased()
-      ? "هنوز خریدی ثبت نشده. پلن را بردارید تا سبد خرید باز شود."
-      : "حساب ندارید؟ اول ثبت‌نام. پلن دارید؟ ورود شما را به همان پنل می‌برد.";
     return UI.publicShell(`
       <div class="dark-page">
         <div class="page stack-lg">
@@ -196,7 +170,7 @@ const PublicViews = (() => {
           <section class="stack">
             <button class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="${loggedIn && SJ.hasPurchased() ? "#/app" : "#/"}">→ بازگشت</button>
             <h1 class="title-xl" style="color:#fff">تعرفه‌ها</h1>
-            <p class="on-dark-muted">${hint}</p>
+            <p class="on-dark-muted">دو اشتراک سالانه برای مربی شنا.</p>
           </section>
           <div class="plan-grid">
             ${[PLANS.essential, PLANS.pro]
@@ -216,7 +190,7 @@ const PublicViews = (() => {
                     ${plan.locked.map((f) => `<li class="is-locked">${f}</li>`).join("")}
                   </ul>
                   <button class="${featured ? "btn-primary" : "btn-white"} btn-block" data-action="plan:choose" data-plan="${plan.id}">
-                    ${owned ? "پلن فعال شما" : "انتخاب و رفتن به سبد خرید"}
+                    ${owned ? "پلن شما" : "شروع"}
                   </button>
                 </article>`;
               })
@@ -253,12 +227,7 @@ const PublicViews = (() => {
             <div class="stack auth-aside">
               <button class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/">→ بازگشت</button>
               <h1 class="title-xl" style="color:#fff">ورود</h1>
-              <p class="on-dark-muted">شماره و رمز را وارد کنید. سیستم خودش می‌فهمد پلن دارید یا نه.</p>
-              <ol class="journey-list">
-                <li><strong>پلن دارید</strong><span>بعد از ورود مستقیم به پنل همان پلن می‌روید.</span></li>
-                <li><strong>هنوز نخریده‌اید</strong><span>تعرفه‌ها باز می‌شود و سبد خرید می‌آید.</span></li>
-                <li><strong>حساب ندارید</strong><span>پایین فرم، ثبت‌نام است.</span></li>
-              </ol>
+              <p class="on-dark-muted">${PLATFORM.tagline}</p>
             </div>
             <form class="card-glass stack" id="login-form">
               <label class="field">
@@ -287,12 +256,7 @@ const PublicViews = (() => {
             <div class="stack auth-aside">
               <button class="btn-quiet" style="color:#baf4ff" data-action="go" data-hash="#/auth">→ بازگشت به ورود</button>
               <h1 class="title-xl" style="color:#fff">ثبت‌نام</h1>
-              <p class="on-dark-muted">حساب جدید هنوز پلن ندارد. بعد از ثبت‌نام، تعرفه‌ها را می‌بینید.</p>
-              <ol class="journey-list">
-                <li><strong>حساب</strong><span>نام، شماره و رمز.</span></li>
-                <li><strong>پلن</strong><span>اقتصادی یا مستری پرو.</span></li>
-                <li><strong>سبد و پنل</strong><span>خرید فرضی، بعد ورود به پنل همان پلن.</span></li>
-              </ol>
+              <p class="on-dark-muted">${PLATFORM.tagline}</p>
             </div>
             <form class="card-glass stack" id="signup-form">
             <label class="field">
@@ -384,7 +348,7 @@ const PublicViews = (() => {
                   </label>`
             }
             <div id="checkout-error" class="checkout-error"></div>
-            <button type="submit" class="btn-primary btn-block">خرید فرضی و ورود به پنل</button>
+            <button type="submit" class="btn-primary btn-block">تکمیل خرید</button>
           </form>
         </div>
         ${UI.designerCredit()}
