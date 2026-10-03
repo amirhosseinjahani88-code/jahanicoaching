@@ -452,6 +452,10 @@ const CoachViews = (() => {
             <span>توضیح جلسه</span>
             <textarea id="ai-brief" rows="3" placeholder="${UI.escapeHtml(AI.voice.samples[0])}">${UI.escapeHtml(APP.ui.brief || "")}</textarea>
           </label>
+          <label class="field">
+            <span>متراژ هدف (اختیاری)</span>
+            <input id="ai-target" inputmode="numeric" placeholder="خالی بماند تا متراژ متناسب با جلسه پیشنهاد شود" value="${UI.escapeHtml(APP.ui.targetMeters || "")}" />
+          </label>
           <div class="row">
             <button class="btn-primary" data-action="workout:generate" ${APP.ui.aiBusy ? "disabled" : ""}>
               ${APP.ui.aiBusy ? "در حال ساخت جلسه…" : "تولید جلسه با AI"}
@@ -499,7 +503,13 @@ const CoachViews = (() => {
           </span>
         </div>
         <div class="grid">
-          ${UI.kpi("متراژ کل", `${UI.fa(workout.meters)} متر`, `${UI.fa(workout.laps)} طول استخر ${UI.fa(workout.poolLength)} متری`)}
+          ${UI.kpi(
+            "متراژ کل",
+            `${UI.fa(workout.meters)} متر`,
+            workout.targetMeters
+              ? `دقیقاً برابر هدف ${UI.fa(workout.targetMeters)} متر`
+              : `${UI.fa(workout.laps)} طول استخر ${UI.fa(workout.poolLength)} متری`
+          )}
           ${UI.kpi("ریت هدف", UI.fa(workout.rateTarget), "دست‌کشی در دقیقه")}
           ${UI.kpi("مدت جلسه", `${UI.fa(workout.minutes)} دقیقه`, workout.focus)}
         </div>
