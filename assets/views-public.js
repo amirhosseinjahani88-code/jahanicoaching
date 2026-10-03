@@ -459,6 +459,11 @@ const PublicViews = (() => {
           </section>
 
           <section class="card stack">
+            <h2 class="title-md">وقایع مربی</h2>
+            ${CoachViews.eventTimelineHtml(student.id, false)}
+          </section>
+
+          <section class="card stack">
             <h2 class="title-md">سابقه حضور</h2>
             <div class="chips">
               ${SJ.studentAttendance(student.id)

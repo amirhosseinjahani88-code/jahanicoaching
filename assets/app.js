@@ -871,6 +871,41 @@ APP.action("finance:remind", (data) => {
   UI.toast(`پیام یادآوری ${UI.millions(balance.due)} برای اولیای ${student.name} آماده ارسال شد.`);
 });
 
+APP.action("event:save", async (data) => {
+  const text = APP.value("event-note").trim();
+  if (!text) {
+    UI.toast("متن رخداد را بنویسید.");
+    return;
+  }
+  const student = SJ.studentById(data.id);
+  if (!student) return;
+  const showToParents = !!(document.getElementById("event-parents") && document.getElementById("event-parents").checked);
+  const button = document.getElementById("event-save");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "در حال تحلیل…";
+  }
+  let analysis = "";
+  try {
+    analysis = await AIRemote.eventAdvice(student, text);
+  } catch (err) {
+    analysis = AI.eventAdvice(student, text);
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "تحلیل AI و ثبت";
+    }
+  }
+  SJ.addStudentNote(student.id, { text, analysis, showToParents });
+  const input = document.getElementById("event-note");
+  if (input) input.value = "";
+  const share = document.getElementById("event-parents");
+  if (share) share.checked = false;
+  const list = document.getElementById("event-timeline");
+  if (list) list.innerHTML = CoachViews.eventTimelineHtml(student.id, true);
+  UI.toast(showToParents ? "وقایع ثبت شد و در پورتال اولیا دیده می‌شود." : "وقایع فقط در پرونده مربی ثبت شد.");
+});
+
 APP.action("payment:add", (data) => {
   const amount = APP.numberFrom(APP.value("pay-amount"));
   if (!amount) {

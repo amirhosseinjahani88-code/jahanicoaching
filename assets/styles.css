@@ -1163,6 +1163,76 @@ button.plan-chip {
   background: #f7fbff;
 }
 
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.switch-track {
+  width: 2.6rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: #cbd5e1;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.switch-track::after {
+  content: "";
+  position: absolute;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  background: #fff;
+  top: 0.17rem;
+  inset-inline-start: 0.18rem;
+  transition: inset-inline-start 0.15s ease;
+}
+
+.switch input:focus-visible + .switch-track {
+  outline: 2px solid rgba(10, 132, 255, 0.45);
+  outline-offset: 2px;
+}
+
+.switch input:checked + .switch-track {
+  background: var(--blue);
+}
+
+.switch input:checked + .switch-track::after {
+  inset-inline-start: calc(100% - 1.33rem);
+}
+
+.note-timeline {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.note-item {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-inline-start: 4px solid var(--blue);
+  border-radius: 14px;
+  background: var(--white);
+}
+
+.event-advice {
+  margin: 0;
+  padding-inline-start: 1.2rem;
+  display: grid;
+  gap: 0.3rem;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -2004,6 +2074,7 @@ html[data-theme="dark"] .roster-item,
 html[data-theme="dark"] .nav-submenu,
 html[data-theme="dark"] .modal-card,
 html[data-theme="dark"] .dropzone,
+html[data-theme="dark"] .note-item,
 html[data-theme="dark"] .ai-box,
 html[data-theme="dark"] .workout-row,
 html[data-theme="dark"] .ai-status,

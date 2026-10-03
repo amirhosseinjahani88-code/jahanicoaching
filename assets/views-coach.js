@@ -307,6 +307,29 @@ const CoachViews = (() => {
 
   /* ---------- پرونده ۳۶۰ شناگر ---------- */
 
+  function eventTimelineHtml(studentId, forCoach) {
+    const items = SJ.studentNotes(studentId).filter((item) => (forCoach ? true : item.showToParents === true));
+    if (!items.length) {
+      return `<p class="muted">${forCoach ? "هنوز واقعه‌ای ثبت نشده است." : "مربی هنوز نکته‌ای برای نمایش به شما ثبت نکرده است."}</p>`;
+    }
+    return `<div class="note-timeline">${items
+      .map((item) => {
+        const lines = String(item.analysis || "")
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean);
+        return `<article class="note-item">
+          <div class="space-between">
+            <time class="muted">${UI.escapeHtml(item.date)}</time>
+            ${forCoach && item.showToParents ? `<span class="badge badge-blue">قابل‌نمایش برای اولیا</span>` : ""}
+          </div>
+          <p>${UI.escapeHtml(item.text)}</p>
+          ${lines.length ? `<ol class="event-advice">${lines.map((line) => `<li>${UI.escapeHtml(line)}</li>`).join("")}</ol>` : ""}
+        </article>`;
+      })
+      .join("")}</div>`;
+  }
+
   function student360(id) {
     const student = SJ.studentById(id);
     if (!student) {
@@ -388,6 +411,23 @@ const CoachViews = (() => {
             }
           </section>
         </div>
+
+        <section class="card stack">
+          <h2 class="title-md">ثبت وقایع و نکات مربیگری</h2>
+          <label class="field">
+            <span>متن رخداد</span>
+            <textarea id="event-note" rows="3" placeholder="مثلاً امروز در ست اصلی ریتم را از دست داد یا مصدوم بود"></textarea>
+          </label>
+          <div class="row">
+            <label class="switch">
+              <input id="event-parents" type="checkbox" />
+              <span class="switch-track" aria-hidden="true"></span>
+              <span>نمایش به والدین</span>
+            </label>
+            <button class="btn-primary btn-sm" id="event-save" type="button" data-action="event:save" data-id="${student.id}">تحلیل AI و ثبت</button>
+          </div>
+          <div id="event-timeline">${eventTimelineHtml(student.id, true)}</div>
+        </section>
 
         <div class="two-col">
           <section class="card stack">
@@ -1044,6 +1084,7 @@ const CoachViews = (() => {
     attendanceAnalysisBody,
     students,
     student360,
+    eventTimelineHtml,
     workoutPage,
     sessionsPage,
     biomechPage,

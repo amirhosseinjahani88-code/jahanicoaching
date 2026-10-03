@@ -261,6 +261,29 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
     }
   }
 
+  async function eventAdvice(student, text) {
+    const local = AI.eventAdvice(student, text);
+    if (!isEnabled()) return local;
+    try {
+      const { json } = await complete({
+        system: `تو مربی شنا هستی. فقط JSON: {"lines":["...","...","..."]} دقیقاً ۳ خط. خط اول فنی، خط دوم روانشناسی، خط سوم اقدام جلسه بعد. هر خط به متن همین رخداد وصل باشد. توصیه کلی ممنوع است.`,
+        user: JSON.stringify({
+          name: student.name,
+          age: student.age,
+          level: student.level,
+          stroke: student.stroke,
+          event: student.event,
+          note: String(text || "").slice(0, 800),
+        }),
+      });
+      const lines = Array.isArray(json?.lines) ? json.lines.map((line) => String(line).trim()).filter(Boolean).slice(0, 3) : [];
+      if (lines.length < 3) return local;
+      return lines.join("\n");
+    } catch (err) {
+      return local;
+    }
+  }
+
   async function biomechAnalyze(student, sample) {
     if (!isEnabled()) throw new Error("اتصال به سرویس هوش مصنوعی برقرار نیست.");
     const metrics = AI.analyzeSample(sample);
@@ -396,6 +419,7 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
     parentReport,
     biomechExplain,
     biomechAnalyze,
+    eventAdvice,
     cockpitInsights,
     ocrReceipt,
     ocrAttendance,

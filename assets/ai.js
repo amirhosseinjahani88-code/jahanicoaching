@@ -284,6 +284,23 @@ const AI = (() => {
 
   /* ---------- بیومکانیک و امتیاز FINA ---------- */
 
+  function eventAdvice(student, text) {
+    const note = String(text || "").trim();
+    const injured = /مصدوم|آسیب|درد|کشید|گرفتگی/.test(note);
+    const lines = injured
+      ? [
+          `از نظر فنی، ${student.name} تا روشن شدن وضعیت آسیب نباید در ست اصلی ${student.stroke} فشار بیاورد.`,
+          `از نظر روانی، عجله برای برگشت اضطراب را بیشتر می‌کند؛ به خود شناگر و خانواده بگویید بهبود از یک جلسه مهم‌تر است.`,
+          `جلسه بعد فقط گرم‌کردن سبک و پرسش از درد باشد؛ اگر درد ماند، شنا را متوقف و پیگیری پزشکی کنید.`,
+        ]
+      : [
+          `از نظر فنی، همین رخداد را در ست بعدی ${student.stroke} با حجم کمتر و اصلاح همان لحظه کار کنید.`,
+          `از نظر روانی، ${student.name} را با یک جمله مشخص درباره همین نکته تشویق کنید و با دیگران مقایسه نکنید.`,
+          `جلسه بعد برای همین نکته یک عدد قابل‌شمارش بگذارید و نتیجه‌اش را دوباره در وقایع بنویسید.`,
+        ];
+    return lines.join("\n");
+  }
+
   function analyzeSample({ distance, time, strokes }) {
     const velocity = distance / time;
     const dps = distance / strokes;
@@ -484,6 +501,7 @@ const AI = (() => {
     biomechVerdict,
     ocrReceipt,
     attendanceInsight,
+    eventAdvice,
     parentReport,
     cockpitInsights,
     FOCUS_PRESETS,

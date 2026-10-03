@@ -86,10 +86,22 @@ const SJ = (() => {
       vaultModules: VAULT_MODULES.map((m) => ({ ...m, lessons: [...m.lessons] })),
       ownedVault: ["bio", "dryland", "nutrition", "rate"],
       viewedStudent: null,
+      notesTimeline: {},
     };
   }
 
+  function attachNotes(target) {
+    if (!target.notesTimeline || typeof target.notesTimeline !== "object" || Array.isArray(target.notesTimeline)) {
+      target.notesTimeline = {};
+    }
+    STUDENTS.forEach((student) => {
+      if (!Array.isArray(target.notesTimeline[student.id])) target.notesTimeline[student.id] = [];
+      student.notesTimeline = target.notesTimeline[student.id];
+    });
+  }
+
   let state = load();
+  attachNotes(state);
 
   function load() {
     try {
@@ -145,6 +157,7 @@ const SJ = (() => {
 
   function reset() {
     state = freshState();
+    attachNotes(state);
     save();
   }
 
@@ -449,6 +462,25 @@ const SJ = (() => {
     save();
   }
 
+  function studentNotes(studentId) {
+    attachNotes(state);
+    return state.notesTimeline[Number(studentId)] || [];
+  }
+
+  function addStudentNote(studentId, { text, analysis, showToParents }) {
+    const list = studentNotes(studentId);
+    const item = {
+      id: `e${Date.now().toString(36)}${Math.floor(Math.random() * 1000).toString(36)}`,
+      date: TODAY_KEY,
+      text: String(text || "").trim().slice(0, 800),
+      analysis: String(analysis || "").trim().slice(0, 900),
+      showToParents: showToParents === true,
+    };
+    list.unshift(item);
+    save();
+    return item;
+  }
+
   /* ---------- آرشیو متدولوژی و CMS ---------- */
 
   function vaultModules() {
@@ -527,6 +559,8 @@ const SJ = (() => {
     latestPublished,
     biomech,
     addBiomech,
+    studentNotes,
+    addStudentNote,
     vaultModules,
     ownsModule,
     buyModule,
