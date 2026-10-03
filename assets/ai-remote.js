@@ -223,6 +223,27 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
     }
   }
 
+  function readBiomechJson(json, local) {
+    const notes = Array.isArray(json?.notes) ? json.notes.map((n) => String(n).slice(0, 280)).filter(Boolean).slice(0, 6) : [];
+    if (!notes.length) throw new Error("پاسخ مدل ناقص بود.");
+    return {
+      ...local,
+      headline: String(json.headline || local.headline).slice(0, 180),
+      notes,
+      engine: "ai",
+    };
+  }
+
+  function asBiomechError(err) {
+    if (err && (err.name === "AbortError" || /abort|timeout/i.test(String(err.message || "")))) {
+      const timeout = new Error("زمان پاسخ سرویس تمام شد. اتصال را بررسی کنید و دوباره تلاش کنید.");
+      timeout.name = "AbortError";
+      return timeout;
+    }
+    if (err instanceof TypeError) return new TypeError("اتصال به سرویس هوش مصنوعی برقرار نشد.");
+    return err instanceof Error ? err : new Error("تحلیل انجام نشد.");
+  }
+
   async function biomechExplain(student) {
     const samples = SJ.biomech(student.id);
     const fallback = () => ({ ...AI.biomechVerdict(samples, student.stroke), engine: "offline" });
@@ -234,11 +255,37 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
         system: `تو آنالیزور بیومکانیک شنا هستی. اعداد از قبل حساب شده‌اند؛ آن‌ها را عوض نکن. فقط JSON: {"headline":"...","notes":["...","..."]}. ۲ تا ۴ نکته اجرایی.`,
         user: `شناگر ${student.name}، شنا ${student.stroke}. نمونه‌ها: ${JSON.stringify(analyzed)}. جمع‌بندی فعلی: ${local.headline}.`,
       });
-      const notes = Array.isArray(json?.notes) ? json.notes.map((n) => String(n).slice(0, 220)).filter(Boolean).slice(0, 6) : [];
-      if (!notes.length) throw new Error("تفسیر ناقص بود.");
-      return { ...local, headline: String(json.headline || local.headline).slice(0, 160), notes, engine: "ai" };
+      return readBiomechJson(json, local);
     } catch (err) {
       return { ...fallback(), fallbackReason: err?.message };
+    }
+  }
+
+  async function biomechAnalyze(student, sample) {
+    if (!isEnabled()) throw new Error("اتصال به سرویس هوش مصنوعی برقرار نیست.");
+    const metrics = AI.analyzeSample(sample);
+    const recordTime = student.times[student.times.length - 1];
+    const fina = AI.finaPoints(student.event, recordTime);
+    const local = AI.biomechVerdict([{ ...sample, stroke: student.stroke }], student.stroke);
+    try {
+      const { json } = await complete({
+        system: `تو آنالیزور بیومکانیک شنا هستی. اعداد را عوض نکن. فقط JSON: {"headline":"...","notes":["...","..."]}. ۲ تا ۴ جمله درباره همین تست: ریت استروک، DPS و امتیاز FINA. جمله کلیشه‌ای ممنوع است.`,
+        user: JSON.stringify({
+          name: student.name,
+          stroke: student.stroke,
+          event: student.event,
+          distance: sample.distance,
+          time: sample.time,
+          strokes: sample.strokes,
+          rate: metrics.rate,
+          dps: metrics.dps,
+          velocity: metrics.velocity,
+          fina: fina || null,
+        }),
+      });
+      return { ...readBiomechJson(json, local), fina };
+    } catch (err) {
+      throw asBiomechError(err);
     }
   }
 
@@ -348,6 +395,7 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
     attendanceInsight,
     parentReport,
     biomechExplain,
+    biomechAnalyze,
     cockpitInsights,
     ocrReceipt,
     ocrAttendance,

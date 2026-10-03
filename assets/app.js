@@ -17,6 +17,7 @@ const APP = (() => {
     studentGroup: "همه",
     biomechStudent: null,
     biomechResult: null,
+    biomechPanel: null,
     ocrResult: null,
   };
 
@@ -203,6 +204,7 @@ const APP = (() => {
       } else if (node.id === "bio-student") {
         ui.biomechStudent = Number(node.value);
         ui.biomechResult = null;
+        ui.biomechPanel = null;
         render();
       } else if (node.id === "att-file") {
         const file = node.files && node.files[0];
@@ -761,6 +763,23 @@ APP.action("manual:publish", () => {
 
 /* ---------- بیومکانیک ---------- */
 
+const BIO_LOADING_LINES = [
+  "در حال آنالیز هیدرودینامیکی و تطبیق ریت با طول دست…",
+  "در حال محاسبه ریت استروک، پیشروی با هر دست و امتیاز FINA…",
+  "در حال خواندن پاسخ مدل و چیدن تحلیل همین تست…",
+];
+
+function paintBiomech() {
+  const panel = APP.ui.biomechPanel;
+  const loading = panel && panel.status === "loading";
+  const button = document.getElementById("bio-calc");
+  if (button) button.disabled = !!loading;
+  const metrics = document.getElementById("bio-metrics");
+  if (metrics) metrics.innerHTML = CoachViews.bioMetricsHtml(APP.ui.biomechResult);
+  const box = document.getElementById("bio-analysis");
+  if (box) box.innerHTML = CoachViews.bioAnalysisHtml();
+}
+
 APP.action("bio:calc", async () => {
   const distance = APP.numberFrom(APP.value("bio-distance"));
   const time = APP.numberFrom(APP.value("bio-time"));
@@ -769,12 +788,37 @@ APP.action("bio:calc", async () => {
     UI.toast("مسافت، زمان و تعداد دست‌کشی را وارد کنید.");
     return;
   }
-  APP.ui.biomechResult = AI.analyzeSample({ distance, time, strokes });
   const student = SJ.studentById(APP.ui.biomechStudent || SJ.students()[0].id);
-  APP.ui.biomechAi[student.id] = { loading: true };
-  APP.render();
-  APP.ui.biomechAi[student.id] = await AIRemote.biomechExplain(student);
-  APP.render();
+  const sample = { distance, time, strokes };
+  APP.ui.biomechResult = AI.analyzeSample(sample);
+  APP.ui.biomechPanel = { status: "loading", error: "", verdict: null };
+  paintBiomech();
+  const started = Date.now();
+  let step = 0;
+  const timer = setInterval(() => {
+    step = (step + 1) % BIO_LOADING_LINES.length;
+    const line = document.getElementById("bio-loading-text");
+    if (line) line.textContent = BIO_LOADING_LINES[step];
+  }, 1400);
+  try {
+    const verdict = await AIRemote.biomechAnalyze(student, sample);
+    const wait = 2200 - (Date.now() - started);
+    if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+    APP.ui.biomechAi[student.id] = verdict;
+    APP.ui.biomechPanel = { status: "ready", error: "", verdict };
+  } catch (err) {
+    const aborted = err && (err.name === "AbortError" || /abort|timeout/i.test(String(err.message || "")));
+    const offline = err instanceof TypeError;
+    const message = aborted
+      ? "زمان پاسخ سرویس تمام شد. اتصال را بررسی کنید و دوباره تلاش کنید."
+      : offline
+        ? "اتصال به سرویس هوش مصنوعی برقرار نشد."
+        : (err && err.message) || "تحلیل انجام نشد.";
+    APP.ui.biomechPanel = { status: "error", error: message, verdict: null };
+  } finally {
+    clearInterval(timer);
+    paintBiomech();
+  }
 });
 
 APP.action("bio:save", () => {

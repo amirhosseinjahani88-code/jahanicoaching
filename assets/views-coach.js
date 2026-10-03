@@ -703,6 +703,45 @@ const CoachViews = (() => {
 
   /* ---------- آنالیز بیومکانیک ---------- */
 
+  function bioMetricsHtml(result) {
+    if (!result) return "";
+    return `<div class="grid">
+      ${UI.kpi("ریت دست", UI.fa(result.rate), "دست‌کشی در دقیقه")}
+      ${UI.kpi("DPS", UI.secs(result.dps, 2), "متر در هر دست")}
+      ${UI.kpi("سرعت", UI.secs(result.velocity, 2), "متر بر ثانیه")}
+      ${UI.kpi("شاخص بازده", UI.secs(result.index, 2), "سرعت × DPS")}
+    </div>`;
+  }
+
+  function bioVerdictHtml(verdict) {
+    return `<div class="ai-box">
+      <strong>${UI.escapeHtml(verdict.headline || "")}</strong>
+      <ul>${(verdict.notes || []).map((note) => `<li>${UI.escapeHtml(note)}</li>`).join("")}</ul>
+    </div>`;
+  }
+
+  function bioAnalysisHtml(fallbackVerdict) {
+    const panel = APP.ui.biomechPanel;
+    if (panel && panel.status === "loading") {
+      return `<div class="ai-box" aria-busy="true">
+        <div class="bio-loading">
+          <span class="spinner" aria-hidden="true"></span>
+          <strong id="bio-loading-text" class="bio-loading-text">در حال آنالیز هیدرودینامیکی و تطبیق ریت با طول دست…</strong>
+        </div>
+      </div>`;
+    }
+    if (panel && panel.status === "error") {
+      return `<div class="ai-box ai-box-error">
+        <strong>تحلیل انجام نشد</strong>
+        <p>${UI.escapeHtml(panel.error || "پاسخ سرویس دریافت نشد.")}</p>
+        <button class="btn-white btn-sm" type="button" data-action="bio:calc">تلاش مجدد</button>
+      </div>`;
+    }
+    const verdict = (panel && panel.status === "ready" && panel.verdict) || fallbackVerdict;
+    if (!verdict) return `<p class="muted">بعد از محاسبه، تحلیل همین تست اینجا می‌آید.</p>`;
+    return bioVerdictHtml(verdict);
+  }
+
   function biomechPage() {
     if (!SJ.isPro()) {
       return UI.shell(
@@ -719,8 +758,11 @@ const CoachViews = (() => {
     if (AIRemote.isEnabled() && !APP.ui.biomechAi[student.id]) {
       APP.ui.biomechAi[student.id] = { loading: true };
       AIRemote.biomechExplain(student).then((verdict) => {
-        APP.ui.biomechAi[student.id] = verdict;
-        APP.render();
+        if (!APP.ui.biomechAi[student.id] || APP.ui.biomechAi[student.id].loading) {
+          APP.ui.biomechAi[student.id] = verdict;
+        }
+        if (APP.ui.biomechPanel && APP.ui.biomechPanel.status) return;
+        if ((window.location.hash || "") === "#/app/biomech") APP.render();
       });
     }
     const cachedBio = APP.ui.biomechAi[student.id];
@@ -746,19 +788,10 @@ const CoachViews = (() => {
             <label class="field"><span>تعداد دست‌کشی</span><input id="bio-strokes" value="20" inputmode="numeric" /></label>
           </div>
           <div class="row">
-            <button class="btn-primary" data-action="bio:calc">محاسبه و تحلیل</button>
-            <button class="btn-white" data-action="bio:save">ثبت در پرونده شاگرد</button>
+            <button class="btn-primary" id="bio-calc" type="button" data-action="bio:calc" ${APP.ui.biomechPanel && APP.ui.biomechPanel.status === "loading" ? "disabled" : ""}>محاسبه و تحلیل</button>
+            <button class="btn-white" type="button" data-action="bio:save">ثبت در پرونده شاگرد</button>
           </div>
-          ${
-            result
-              ? `<div class="grid">
-                  ${UI.kpi("ریت دست", UI.fa(result.rate), "دست‌کشی در دقیقه")}
-                  ${UI.kpi("DPS", UI.secs(result.dps, 2), "متر در هر دست")}
-                  ${UI.kpi("سرعت", UI.secs(result.velocity, 2), "متر بر ثانیه")}
-                  ${UI.kpi("شاخص بازده", UI.secs(result.index, 2), "سرعت × DPS")}
-                 </div>`
-              : ""
-          }
+          <div id="bio-metrics">${bioMetricsHtml(result)}</div>
         </section>
 
         <div class="two-col">
@@ -776,10 +809,7 @@ const CoachViews = (() => {
           </section>
           <section class="card stack">
             <h2 class="title-md">تحلیل AI</h2>
-            <div class="ai-box">
-              <strong>${UI.escapeHtml(verdict.headline)}</strong>
-              <ul>${verdict.notes.map((n) => `<li>${UI.escapeHtml(n)}</li>`).join("")}</ul>
-            </div>
+            <div id="bio-analysis">${bioAnalysisHtml(verdict)}</div>
             <div class="row">
               <span class="badge badge-blue">امتیاز FINA رکورد فعلی: ${UI.fa(AI.finaPoints(student.event, student.times[student.times.length - 1]) || 0)}</span>
             </div>
@@ -1017,6 +1047,8 @@ const CoachViews = (() => {
     workoutPage,
     sessionsPage,
     biomechPage,
+    bioMetricsHtml,
+    bioAnalysisHtml,
     financePage,
     vaultPage,
     profilePage,
