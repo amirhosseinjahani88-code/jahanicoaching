@@ -124,18 +124,55 @@ const AIRemote = (() => {
     }
   }
 
-  async function attendanceInsight(counts, absentNames, lateNames) {
-    const fallback = () => ({ ...AI.attendanceInsight(counts, absentNames, lateNames), engine: "offline" });
+  const ATTENDANCE_SYSTEM = `تو مربی شنا هستی و فقط درباره همین یک جلسه حرف می‌زنی. توصیه عمومی، شعار انگیزشی و جمله کلیشه‌ای ممنوع است. هر جمله باید به عدد همین جلسه یا نام دقیق یک شناگر وصل باشد.
+فقط JSON بدون متن اضافه:
+{"rate":0,"discipline":"...","absences":[{"name":"...","action":"..."}],"latePlan":"..."}
+rate درصد مشارکت همین جلسه است: (حاضر + تأخیر) تقسیم بر کل، گرد شده.
+discipline یک جمله است با درصد انضباط (حاضر به‌موقع تقسیم بر کل) و درصد مشارکت تیمی.
+absences برای هر نام غایب دقیقاً یک اقدام است. اگر یادداشت علت را گفته، به‌خصوص مصدومیت یا آسیب، action باید پیگیری فوری همان علت باشد. اگر علت در یادداشت نیست، صریح بگو علت ثبت نشده و خواستن دلیل از خانواده را بنویس.
+اگر غایب نیست absences آرایه خالی باشد.
+latePlan یک ست جبرانی کوتاه با تکرار، مسافت و استراحت برای همین افراد تأخیری است و نام‌شان را می‌آورد. اگر تأخیر نیست بنویس ست جبرانی لازم نیست.`;
+
+  async function attendanceInsight(counts, absentNames, lateNames, notes) {
+    const local = AI.attendanceInsight(counts, absentNames, lateNames, notes);
+    const fallback = () => ({ ...local, engine: "offline" });
     if (!isEnabled()) return fallback();
+    const payload = {
+      present: counts.present,
+      late: counts.late,
+      absent: counts.absent,
+      total: counts.total,
+      absentNames,
+      lateNames,
+      notes: String(notes || ""),
+    };
     try {
       const { json } = await complete({
-        system: `تو مربی شنا هستی. فقط JSON بده: {"rate":85,"lines":["...","..."]}. ۳ تا ۵ جمله کاربردی فارسی برای مربی. rate درصد حضور است.`,
-        user: `کل ${counts.total}، حاضر ${counts.present}، تأخیر ${counts.late}، غایب ${counts.absent}. غایبان: ${absentNames.join("، ") || "ندارد"}. تأخیر: ${lateNames.join("، ") || "ندارد"}.`,
+        system: ATTENDANCE_SYSTEM,
+        user: JSON.stringify(payload),
       });
-      const lines = Array.isArray(json?.lines) ? json.lines.map((l) => String(l).slice(0, 220)).filter(Boolean).slice(0, 6) : [];
-      if (lines.length < 2) throw new Error("تحلیل ناقص بود.");
-      const rate = clampInt(json.rate, 0, 100, counts.total ? Math.round(((counts.present + counts.late) / counts.total) * 100) : 0);
-      return { rate, lines, engine: "ai" };
+      const byName = new Map((local.absences || []).map((row) => [row.name, row.action]));
+      const returned = Array.isArray(json?.absences) ? json.absences : [];
+      returned.forEach((row) => {
+        const name = String(row?.name || "").trim();
+        const action = String(row?.action || "").trim();
+        if (name && action) byName.set(name, action.slice(0, 320));
+      });
+      const absences = (absentNames || []).map((name) => ({
+        name,
+        action: byName.get(name) || local.absences.find((row) => row.name === name)?.action || "",
+      }));
+      const discipline = String(json?.discipline || local.discipline).slice(0, 320);
+      const latePlan = String(json?.latePlan || local.latePlan).slice(0, 320);
+      const rate = clampInt(
+        json?.rate,
+        0,
+        100,
+        counts.total ? Math.round(((counts.present + counts.late) / counts.total) * 100) : 0
+      );
+      const lines = [discipline, ...absences.map((row) => row.action), latePlan].filter(Boolean);
+      if (!discipline || (absentNames.length && absences.some((row) => !row.action))) throw new Error("تحلیل ناقص بود.");
+      return { rate, discipline, absences, latePlan, lines, engine: "ai" };
     } catch (err) {
       return { ...fallback(), fallbackReason: err?.message };
     }

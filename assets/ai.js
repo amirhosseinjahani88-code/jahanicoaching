@@ -277,24 +277,39 @@ const AI = (() => {
 
   /* ---------- تحلیل حضور و غیاب ---------- */
 
-  function attendanceInsight(counts, absentNames, lateNames) {
-    const lines = [];
-    lines.push(
-      `از ${UI.fa(counts.total)} شناگر، ${UI.fa(counts.present)} حاضر، ${UI.fa(counts.late)} با تأخیر و ${UI.fa(counts.absent)} غایب ثبت شد.`
-    );
-    if (absentNames.length) {
-      lines.push(`پیام غیبت برای اولیای ${absentNames.slice(0, 3).join("، ")} آماده ارسال است.`);
-    }
-    if (lateNames.length) {
-      lines.push(`${lateNames.slice(0, 3).join("، ")} تأخیر داشتند؛ گرم‌کردن کوتاه جبرانی پیشنهاد می‌شود.`);
-    }
-    const rate = counts.total ? Math.round(((counts.present + counts.late) / counts.total) * 100) : 0;
-    lines.push(
-      rate >= 90
-        ? "نرخ حضور امروز بالای ۹۰ درصد است؛ حجم ست اصلی را می‌توانید کامل اجرا کنید."
-        : "نرخ حضور پایین‌تر از حد مطلوب است؛ ست اصلی را برای اجرای گروهی کوتاه کنید."
-    );
-    return { rate, lines };
+  function noteForName(notes, name) {
+    const text = String(notes || "").replace(/\s+/g, " ").trim();
+    if (!text || !name) return "";
+    const first = String(name).split(" ")[0];
+    const chunks = text.split(/[\n.!?؟]+/).map((part) => part.trim()).filter(Boolean);
+    return chunks.find((part) => part.includes(name) || (first && part.includes(first))) || "";
+  }
+
+  function attendanceInsight(counts, absentNames, lateNames, notes) {
+    const total = counts.total || 0;
+    const present = counts.present || 0;
+    const lateCount = counts.late || 0;
+    const rate = total ? Math.round(((present + lateCount) / total) * 100) : 0;
+    const onTime = total ? Math.round((present / total) * 100) : 0;
+    const discipline = `انضباط این جلسه ${UI.fa(onTime)}٪ است: ${UI.fa(present)} نفر از ${UI.fa(total)} به‌موقع در آب بودند. مشارکت تیمی ${UI.fa(rate)}٪ است، چون ${UI.fa(lateCount)} نفر با تأخیر هم به جمع پیوستند.`;
+    const absences = (absentNames || []).map((name) => {
+      const snippet = noteForName(notes, name);
+      const injured = /مصدوم|آسیب|درد|کشید|گرفتگی|کبود|التهاب|پزشک/.test(snippet);
+      let action;
+      if (injured) {
+        action = `پیگیری فوری ${name}: در یادداشت آمده «${snippet}». همین امروز با خانواده تماس بگیر، وضعیت آسیب را بپرس و تا نظر پزشک، او را به آب برنگردان.`;
+      } else if (snippet) {
+        action = `پیگیری ${name}: یادداشت همین جلسه می‌گوید «${snippet}». این علت را با خانواده تأیید کن و جلسه بعد را فقط بر اساس همان دلیل تنظیم کن.`;
+      } else {
+        action = `برای ${name} در یادداشت این جلسه علت غیبت نوشته نشده. پیش از جلسه بعد دلیل دقیق را از خانواده بپرس و در پرونده همین نفر ثبت کن.`;
+      }
+      return { name, action };
+    });
+    const latePlan = (lateNames || []).length
+      ? `ست جبرانی برای ${(lateNames || []).join("، ")}: ۴ × ۵۰ متر شنای اصلی، استراحت ۲۰ ثانیه، فقط نرم و با تمرکز روی رسیدن به ریتم گروه. بعد از همین ست به ست اصلی بپیوندند.`
+      : "تأخیری در این جلسه ثبت نشده؛ ست جبرانی لازم نیست.";
+    const lines = [discipline, ...absences.map((row) => row.action), latePlan];
+    return { rate, discipline, absences, latePlan, lines };
   }
 
   /* ---------- کارنامه اولیا ---------- */

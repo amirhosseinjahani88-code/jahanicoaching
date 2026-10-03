@@ -534,22 +534,44 @@ APP.action("attendance:save-notes", () => {
   UI.toast("یادداشت جلسه ذخیره شد.");
 });
 
+function paintAttendanceAnalysis(analysis, busy) {
+  const button = document.getElementById("att-analyze");
+  if (button) {
+    button.disabled = !!busy;
+    button.textContent = busy ? "در حال تحلیل…" : "تحلیل با AI و ثبت خودکار در پرونده شاگردان";
+  }
+  const box = document.getElementById("att-analysis");
+  if (box) box.innerHTML = CoachViews.attendanceAnalysisBody(busy ? { loading: true } : analysis);
+}
+
 APP.action("attendance:analyze", async () => {
   const counts = SJ.todayCounts();
   if (!counts.marked) {
     UI.toast("اول وضعیت حضور شاگردان را ثبت کنید.");
     return;
   }
+  const notes = APP.value("att-notes");
+  SJ.setAttendanceNotes(notes);
   const sheet = SJ.todaySheet();
   const absent = SJ.students().filter((s) => sheet.marks[s.id] === "absent").map((s) => s.name);
   const late = SJ.students().filter((s) => sheet.marks[s.id] === "late").map((s) => s.name);
+  const started = Date.now();
   APP.ui.aiBusy = true;
-  APP.render();
-  const insight = await AIRemote.attendanceInsight(counts, absent, late);
+  paintAttendanceAnalysis(null, true);
+  let percent = 12;
+  const timer = setInterval(() => {
+    percent = Math.min(88, percent + 9);
+    const bar = document.getElementById("att-analysis-bar");
+    if (bar) bar.style.width = `${percent}%`;
+  }, 280);
+  const insight = await AIRemote.attendanceInsight(counts, absent, late, notes);
+  const wait = 1800 - (Date.now() - started);
+  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+  clearInterval(timer);
   APP.ui.aiBusy = false;
   SJ.setAttendanceAnalysis(insight);
+  paintAttendanceAnalysis(insight, false);
   UI.toast(insight.engine === "ai" ? "تحلیل AI ساخته و ثبت شد." : "سرویس AI در دسترس نبود؛ تحلیل محلی ثبت شد.");
-  APP.render();
 });
 
 APP.action("attendance:pick", () => {

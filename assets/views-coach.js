@@ -132,6 +132,35 @@ const CoachViews = (() => {
 
   /* ---------- حضور و غیاب ---------- */
 
+  function attendanceAnalysisBody(analysis) {
+    if (analysis && analysis.loading) {
+      return `<div class="ai-box" aria-busy="true">
+        <span class="muted">در حال خواندن تعداد حاضرها، نام غایب‌ها، نام تأخیرها و یادداشت همین جلسه…</span>
+        <div class="progress"><span id="att-analysis-bar" style="width:12%"></span></div>
+      </div>`;
+    }
+    if (!analysis) {
+      return `<p class="muted">پس از ثبت وضعیت‌ها، درصد انضباط، پیگیری هر غایب و ست جبرانی تأخیر ساخته می‌شود.</p>`;
+    }
+    if (analysis.discipline || analysis.latePlan || (analysis.absences && analysis.absences.length)) {
+      const followUps = (analysis.absences || [])
+        .map((row) => `<li><strong>${UI.escapeHtml(row.name)}.</strong> ${UI.escapeHtml(row.action)}</li>`)
+        .join("");
+      return `<div class="ai-box">
+        ${UI.progressBar(analysis.rate, "مشارکت تیمی این جلسه")}
+        <p>${UI.escapeHtml(analysis.discipline || "")}</p>
+        <strong>پیگیری غایبان</strong>
+        ${followUps ? `<ul>${followUps}</ul>` : `<p class="muted">غایبی در این جلسه ثبت نشده.</p>`}
+        <strong>ست جبرانی تأخیر</strong>
+        <p>${UI.escapeHtml(analysis.latePlan || "")}</p>
+      </div>`;
+    }
+    return `<div class="ai-box">
+      ${UI.progressBar(analysis.rate, "مشارکت تیمی این جلسه")}
+      <ul>${(analysis.lines || []).map((line) => `<li>${UI.escapeHtml(line)}</li>`).join("")}</ul>
+    </div>`;
+  }
+
   function attendanceKpi(stat, label, value, hint, tone) {
     return UI.kpi(label, value, hint, tone).replace("<div ", `<div data-att-stat="${stat}" `);
   }
@@ -209,17 +238,10 @@ const CoachViews = (() => {
 
             <section class="card stack">
               <h2 class="title-md">تحلیل با AI</h2>
-              <button class="btn-primary btn-block" data-action="attendance:analyze" ${APP.ui.aiBusy ? "disabled" : ""}>
+              <button class="btn-primary btn-block" id="att-analyze" data-action="attendance:analyze" ${APP.ui.aiBusy ? "disabled" : ""}>
                 ${APP.ui.aiBusy ? "در حال تحلیل…" : "تحلیل با AI و ثبت خودکار در پرونده شاگردان"}
               </button>
-              ${
-                sheet.analysis
-                  ? `<div class="ai-box">
-                      ${UI.progressBar(sheet.analysis.rate, "نرخ حضور امروز")}
-                      <ul>${sheet.analysis.lines.map((l) => `<li>${UI.escapeHtml(l)}</li>`).join("")}</ul>
-                     </div>`
-                  : `<p class="muted">پس از ثبت وضعیت‌ها، تحلیل و پیام‌های پیشنهادی اولیا ساخته می‌شود.</p>`
-              }
+              <div id="att-analysis">${attendanceAnalysisBody(APP.ui.aiBusy ? { loading: true } : sheet.analysis)}</div>
             </section>
           </div>
         </div>
@@ -979,6 +1001,7 @@ const CoachViews = (() => {
   return {
     cockpit,
     attendance,
+    attendanceAnalysisBody,
     students,
     student360,
     workoutPage,
