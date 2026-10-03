@@ -661,6 +661,76 @@ const CoachViews = (() => {
 
   /* ---------- جلسات گذشته ---------- */
 
+  function nameChips(names, tone, emptyLabel) {
+    if (!names.length) return `<p class="muted">${emptyLabel}</p>`;
+    return `<div class="chips">${names.map((name) => `<span class="chip chip-${tone}">${UI.escapeHtml(name)}</span>`).join("")}</div>`;
+  }
+
+  function sessionDetailHtml(date) {
+    const day = SJ.sessionDetail(date);
+    if (!day) return `<p class="muted">این جلسه پیدا نشد.</p>`;
+    const analysis = day.analysis;
+    const analysisHtml = analysis
+      ? `<div class="ai-box">
+          ${analysis.discipline ? `<p>${UI.escapeHtml(analysis.discipline)}</p>` : ""}
+          ${
+            analysis.absences && analysis.absences.length
+              ? `<ul>${analysis.absences.map((row) => `<li><strong>${UI.escapeHtml(row.name)}.</strong> ${UI.escapeHtml(row.action || "")}</li>`).join("")}</ul>`
+              : ""
+          }
+          ${analysis.latePlan ? `<p>${UI.escapeHtml(analysis.latePlan)}</p>` : ""}
+          ${
+            !analysis.discipline && !analysis.latePlan && analysis.lines
+              ? `<ul>${analysis.lines.map((line) => `<li>${UI.escapeHtml(line)}</li>`).join("")}</ul>`
+              : ""
+          }
+        </div>`
+      : `<p class="muted">تحلیل هوش مصنوعی برای این روز ثبت نشده است.</p>`;
+    const workoutsHtml = day.workouts.length
+      ? day.workouts
+          .map(
+            (workout) => `
+          <div class="session-workout">
+            <div class="space-between">
+              <strong>${UI.escapeHtml(workout.title)}</strong>
+              <span class="badge ${workout.status === "published" ? "badge-ok" : "badge-warn"}">${workout.status === "published" ? "منتشر شده" : "پیش‌نویس"}</span>
+            </div>
+            <p class="muted" style="font-size:.9rem">${UI.fa(workout.meters)} متر • ${UI.fa(workout.minutes)} دقیقه • ${UI.escapeHtml(workout.focus || "")}</p>
+            <div class="workout-output">
+              ${(workout.sets || [])
+                .map(
+                  (set) =>
+                    `<div class="workout-row"><span>${UI.escapeHtml(set.phase)}</span><span>${UI.escapeHtml(set.detail)}</span><span class="num">${UI.fa(set.meters)} م</span></div>`
+                )
+                .join("")}
+            </div>
+          </div>`
+          )
+          .join("")
+      : `<p class="muted">برنامه تمرینی برای این روز ثبت نشده است.</p>`;
+    return `
+      <div class="stack">
+        <h3 class="title-md">حاضرین <span class="badge badge-ok">${UI.fa(day.present.length)}</span></h3>
+        ${nameChips(day.present, "present", "کسی در این دسته نیست.")}
+        <h3 class="title-md">غایبین <span class="badge badge-warn">${UI.fa(day.absent.length)}</span></h3>
+        ${nameChips(day.absent, "absent", "کسی در این دسته نیست.")}
+        <h3 class="title-md">تأخیری‌ها <span class="badge badge-warn">${UI.fa(day.late.length)}</span></h3>
+        ${nameChips(day.late, "late", "کسی در این دسته نیست.")}
+      </div>
+      <div class="stack">
+        <h3 class="title-md">یادداشت مربی</h3>
+        <p>${day.notes ? UI.escapeHtml(day.notes) : "بدون یادداشت"}</p>
+      </div>
+      <div class="stack">
+        <h3 class="title-md">برنامه تمرینی</h3>
+        ${workoutsHtml}
+      </div>
+      <div class="stack">
+        <h3 class="title-md">تحلیل هوش مصنوعی</h3>
+        ${analysisHtml}
+      </div>`;
+  }
+
   function sessionsPage() {
     const history = SJ.sessionHistory();
     const totalWorkouts = SJ.workouts().length;
@@ -675,7 +745,7 @@ const CoachViews = (() => {
             : "امروز — هنوز ثبت نشده"
           : "برگزار شده";
         return `
-        <section class="card stack session-card ${day.isToday ? "session-card-today" : ""}">
+        <section class="card stack session-card ${day.isToday ? "session-card-today" : ""}" data-action="session:open" data-date="${UI.escapeHtml(day.date)}" role="button" tabindex="0">
           <div class="space-between">
             <div class="stack" style="gap:.2rem">
               <strong>${UI.escapeHtml(day.date)}</strong>
@@ -1087,6 +1157,7 @@ const CoachViews = (() => {
     eventTimelineHtml,
     workoutPage,
     sessionsPage,
+    sessionDetailHtml,
     biomechPage,
     bioMetricsHtml,
     bioAnalysisHtml,

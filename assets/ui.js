@@ -62,15 +62,19 @@ const UI = (() => {
     toastTimer = setTimeout(() => node.remove(), 3200);
   }
 
+  let onModalKey = null;
+
   function modal(title, bodyHtml, footerHtml) {
+    const scrollY = window.scrollY;
     closeModal();
     const wrap = document.createElement("div");
     wrap.className = "modal-backdrop";
+    wrap.dataset.scrollY = String(scrollY);
     wrap.innerHTML = `
-      <div class="modal-card" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
         <div class="space-between">
           <h3 class="title-md">${title}</h3>
-          <button class="btn-quiet" data-action="modal:close">بستن ✕</button>
+          <button class="btn-quiet" type="button" data-action="modal:close" aria-label="بستن">✕</button>
         </div>
         <div class="divider"></div>
         <div class="stack">${bodyHtml}</div>
@@ -79,12 +83,29 @@ const UI = (() => {
     wrap.addEventListener("click", (event) => {
       if (event.target === wrap) closeModal();
     });
+    onModalKey = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeModal();
+    };
+    document.addEventListener("keydown", onModalKey);
     document.body.append(wrap);
+    requestAnimationFrame(() => {
+      if (window.scrollY !== scrollY) window.scrollTo(0, scrollY);
+    });
   }
 
   function closeModal() {
     const open = document.querySelector(".modal-backdrop");
+    const scrollY = open ? Number(open.dataset.scrollY) : null;
     if (open) open.remove();
+    if (onModalKey) {
+      document.removeEventListener("keydown", onModalKey);
+      onModalKey = null;
+    }
+    if (scrollY != null && Number.isFinite(scrollY) && window.scrollY !== scrollY) {
+      window.scrollTo(0, scrollY);
+    }
   }
 
   /* ---------- نمودارها ---------- */

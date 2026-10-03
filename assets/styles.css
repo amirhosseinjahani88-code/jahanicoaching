@@ -1102,6 +1102,16 @@ button.plan-chip {
   font-size: 0.9rem;
 }
 
+.session-card {
+  cursor: pointer;
+  text-align: start;
+  width: 100%;
+}
+
+.session-card:hover {
+  border-color: rgba(10, 132, 255, 0.45);
+}
+
 .session-card-today {
   border: 2px solid rgba(10, 132, 255, 0.35);
 }

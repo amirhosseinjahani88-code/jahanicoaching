@@ -165,6 +165,15 @@ const APP = (() => {
       event.preventDefault();
     });
 
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const card = event.target.closest("[data-action='session:open']");
+      if (!card || event.target !== card) return;
+      event.preventDefault();
+      const handler = actions["session:open"];
+      if (handler) handler(card.dataset, card, event);
+    });
+
     document.addEventListener("click", (event) => {
       if (!event.target.closest(".nav-group")) {
         document.querySelectorAll(".nav-group.is-open").forEach((group) => {
@@ -904,6 +913,12 @@ APP.action("event:save", async (data) => {
   const list = document.getElementById("event-timeline");
   if (list) list.innerHTML = CoachViews.eventTimelineHtml(student.id, true);
   UI.toast(showToParents ? "وقایع ثبت شد و در پورتال اولیا دیده می‌شود." : "وقایع فقط در پرونده مربی ثبت شد.");
+});
+
+APP.action("session:open", (data) => {
+  const date = data.date;
+  if (!date || !SJ.sessionDetail(date)) return;
+  UI.modal(`جزئیات ${date}`, CoachViews.sessionDetailHtml(date));
 });
 
 APP.action("payment:add", (data) => {

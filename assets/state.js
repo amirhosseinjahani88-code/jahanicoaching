@@ -365,6 +365,26 @@ const SJ = (() => {
       });
   }
 
+  function sessionDetail(date) {
+    const sheet = state.attendance[date] || null;
+    const marks = (sheet && sheet.marks) || {};
+    const groups = { present: [], late: [], absent: [] };
+    STUDENTS.forEach((student) => {
+      const status = marks[student.id] || marks[String(student.id)];
+      if (groups[status]) groups[status].push(student.name);
+    });
+    return {
+      date,
+      isToday: date === TODAY_KEY,
+      notes: (sheet && sheet.notes) || "",
+      analysis: (sheet && sheet.analysis) || null,
+      present: groups.present,
+      late: groups.late,
+      absent: groups.absent,
+      workouts: state.workouts.filter((w) => w.createdAt === date),
+    };
+  }
+
   function studentAttendance(studentId) {
     const rows = [];
     SESSION_DATES.forEach((date) => {
@@ -547,6 +567,7 @@ const SJ = (() => {
     setAttendanceAnalysis,
     todayCounts,
     sessionHistory,
+    sessionDetail,
     studentAttendance,
     attendanceRate,
     payments,
