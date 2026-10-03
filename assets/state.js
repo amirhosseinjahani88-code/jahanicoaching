@@ -87,6 +87,7 @@ const SJ = (() => {
       ownedVault: ["bio", "dryland", "nutrition", "rate"],
       viewedStudent: null,
       notesTimeline: {},
+      reminderTemplate: "",
     };
   }
 
@@ -431,6 +432,19 @@ const SJ = (() => {
     return { fee: student.fee, paid, due: Math.max(0, student.fee - paid) };
   }
 
+  const DEFAULT_REMINDER =
+    "سلام {parent} عزیز،\nشهریه {student} هنوز تسویه نشده و مانده آن {amount} است.\nلطفاً در اولین فرصت واریز کنید.";
+
+  function reminderTemplate() {
+    return state.reminderTemplate || DEFAULT_REMINDER;
+  }
+
+  function setReminderTemplate(text) {
+    state.reminderTemplate = String(text || "").trim().slice(0, 1000) || DEFAULT_REMINDER;
+    save();
+    return state.reminderTemplate;
+  }
+
   function financeSummary() {
     let expected = 0;
     let collected = 0;
@@ -574,6 +588,8 @@ const SJ = (() => {
     addPayment,
     studentBalance,
     financeSummary,
+    reminderTemplate,
+    setReminderTemplate,
     workouts,
     addWorkout,
     updateWorkout,

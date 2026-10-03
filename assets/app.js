@@ -874,10 +874,127 @@ APP.action("finance:reject", () => {
   APP.render();
 });
 
-APP.action("finance:remind", (data) => {
+function fillReminder(student, balance) {
+  return SJ.reminderTemplate()
+    .split("{parent}")
+    .join(student.parent || "ولی")
+    .split("{student}")
+    .join(student.name)
+    .split("{amount}")
+    .join(UI.money(balance.due));
+}
+
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (err) {
+    /* در صورت رد دسترسی، روش جایگزین پایین استفاده می‌شود */
+  }
+  const area = document.createElement("textarea");
+  area.value = text;
+  area.setAttribute("readonly", "");
+  area.style.position = "fixed";
+  area.style.inset = "0";
+  area.style.opacity = "0";
+  document.body.append(area);
+  area.select();
+  let ok = false;
+  try {
+    ok = document.execCommand("copy");
+  } catch (err) {
+    ok = false;
+  }
+  area.remove();
+  return ok;
+}
+
+function exportWorkbook(filename, rows, sheetName) {
+  if (!window.XLSX) {
+    UI.toast("کتابخانه اکسل هنوز بارگذاری نشده است.");
+    return false;
+  }
+  try {
+    const sheet = XLSX.utils.json_to_sheet(rows.length ? rows : [{ توضیح: "ردیفی نیست" }]);
+    const book = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book, sheet, sheetName);
+    XLSX.writeFile(book, filename);
+    return true;
+  } catch (err) {
+    UI.toast("ساخت فایل اکسل ممکن نشد.");
+    return false;
+  }
+}
+
+APP.action("finance:template", () => {
+  UI.modal(
+    "الگوی پیام یادآوری",
+    `<label class="field">
+       <span>متن الگو</span>
+       <textarea id="remind-template" rows="6">${UI.escapeHtml(SJ.reminderTemplate())}</textarea>
+     </label>
+     <p class="muted">تگ‌های متغیر: {parent} نام ولی، {student} نام شناگر، {amount} مانده شهریه.</p>
+     <button class="btn-primary btn-sm" type="button" data-action="finance:template-save">ذخیره الگو</button>`
+  );
+});
+
+APP.action("finance:template-save", () => {
+  SJ.setReminderTemplate(APP.value("remind-template"));
+  UI.closeModal();
+  UI.toast("الگوی پیام یادآوری ذخیره شد.");
+});
+
+APP.action("finance:remind", async (data) => {
   const student = SJ.studentById(data.id);
+  if (!student) return;
   const balance = SJ.studentBalance(data.id);
-  UI.toast(`پیام یادآوری ${UI.millions(balance.due)} برای اولیای ${student.name} آماده ارسال شد.`);
+  const message = fillReminder(student, balance);
+  const copied = await copyText(message);
+  UI.toast(copied ? "پیام یادآوری در کلیپ‌بورد کپی شد." : "کپی پیام ممکن نشد.");
+});
+
+APP.action("finance:export", (data) => {
+  if (data.kind === "debtors") {
+    const rows = SJ.students()
+      .map((student) => {
+        const balance = SJ.studentBalance(student.id);
+        return { student, balance };
+      })
+      .filter((row) => row.balance.due > 0)
+      .map((row) => ({
+        شناگر: row.student.name,
+        ولی: row.student.parent,
+        تلفن: row.student.parentPhone,
+        شهریه: row.balance.fee,
+        دریافتی: row.balance.paid,
+        مانده: row.balance.due,
+      }));
+    exportWorkbook("bedehkaran.xlsx", rows, "بدهکاران");
+    UI.toast("فایل اکسل بدهکاران آماده شد.");
+    return;
+  }
+  const rows = SJ.payments()
+    .slice()
+    .reverse()
+    .map((payment) => {
+      const student = SJ.studentById(payment.studentId);
+      return {
+        تاریخ: payment.date,
+        شناگر: student ? student.name : "",
+        ولی: student ? student.parent : "",
+        مبلغ: payment.amount,
+        روش: payment.method,
+        منبع: payment.source === "ocr" ? "OCR" : "دستی",
+      };
+    });
+  exportWorkbook("daftar-pardakht.xlsx", rows, "دفتر");
+  UI.toast("فایل اکسل دفتر پرداخت‌ها آماده شد.");
+});
+
+APP.action("finance:print", () => {
+  window.print();
 });
 
 APP.action("event:save", async (data) => {

@@ -965,15 +965,34 @@ const CoachViews = (() => {
       .map((s) => ({ s, balance: SJ.studentBalance(s.id) }))
       .filter((row) => row.balance.due > 0);
 
+    const settlementRows = SJ.students()
+      .map((student) => {
+        const balance = SJ.studentBalance(student.id);
+        return `<tr>
+          <td>${UI.escapeHtml(student.name)}</td>
+          <td>${UI.escapeHtml(student.parent)}</td>
+          <td class="num">${UI.money(balance.fee)}</td>
+          <td class="num">${UI.money(balance.paid)}</td>
+          <td class="num">${UI.money(balance.due)}</td>
+        </tr>`;
+      })
+      .join("");
+
     const body = `
       <div class="stack-lg">
+        <div class="no-print stack-lg">
         ${UI.sectionTitle("دستیار مالی و شفافیت شهریه", "پایان نشتی مالی؛ هر رسید به پرونده شاگرد وصل می‌شود.", "#/app")}
 
         <div class="grid">
-          ${UI.kpi("شهریه مورد انتظار", UI.millions(summary.expected), "مجموع این ماه")}
-          ${UI.kpi("وصول‌شده", UI.millions(summary.collected), `${UI.fa(Math.round((summary.collected / summary.expected) * 100))}٪ محقق شده`)}
-          ${UI.kpi("مانده", UI.millions(summary.due), `${UI.fa(summary.debtors)} شاگرد بدهکار`, summary.due ? "kpi-warn" : "")}
-          ${UI.kpi("نرخ وصول", `${UI.fa(Math.round((summary.collected / summary.expected) * 100))}٪`, "هدف: بالای ۹۰٪")}
+          ${UI.kpi("شهریه‌های دریافتی", UI.millions(summary.collected), "وصول‌شده تا امروز")}
+          ${UI.kpi("مانده شهریه (بدهی)", UI.millions(summary.due), `${UI.fa(summary.debtors)} شاگرد بدهکار`, summary.due ? "kpi-warn" : "")}
+          ${UI.kpi("شهریه مورد انتظار کل", UI.millions(summary.expected), "مجموع شهریه این دوره")}
+        </div>
+
+        <div class="row no-print">
+          <button class="btn-white btn-sm" type="button" data-action="finance:export" data-kind="ledger">خروجی اکسل دفتر پرداخت‌ها</button>
+          <button class="btn-white btn-sm" type="button" data-action="finance:export" data-kind="debtors">خروجی اکسل بدهکاران</button>
+          <button class="btn-primary btn-sm" type="button" data-action="finance:print">خروجی چاپی تسویه‌حساب</button>
         </div>
 
         <div class="two-col">
@@ -1008,7 +1027,10 @@ const CoachViews = (() => {
           </section>
 
           <section class="card stack">
-            <h2 class="title-md">بدهکاران و پیام یادآوری</h2>
+            <div class="space-between">
+              <h2 class="title-md">بدهکاران و پیام یادآوری</h2>
+              <button class="btn-quiet" type="button" data-action="finance:template" aria-label="تنظیم الگوی پیام">⚙</button>
+            </div>
             <div class="stack">
               ${debtors
                 .map(
@@ -1016,7 +1038,7 @@ const CoachViews = (() => {
                 <div class="ledger-row">
                   <span>${UI.escapeHtml(row.s.name)}</span>
                   <strong class="num">${UI.millions(row.balance.due)}</strong>
-                  <button class="btn-white btn-sm" data-action="finance:remind" data-id="${row.s.id}">پیام یادآوری</button>
+                  <button class="btn-white btn-sm" type="button" data-action="finance:remind" data-id="${row.s.id}">کپی پیام یادآوری</button>
                 </div>`
                 )
                 .join("") || '<p class="muted">همه شاگردان تسویه کرده‌اند.</p>'}
@@ -1041,6 +1063,28 @@ const CoachViews = (() => {
               })
               .join("")}
           </div>
+        </section>
+        </div>
+        <section class="print-sheet" id="finance-print">
+          <h1>برگه تسویه‌حساب شهریه</h1>
+          <p>${UI.escapeHtml(TODAY_LABEL)} • ${UI.escapeHtml(SJ.coachName() || "مربی")}</p>
+          <table>
+            <thead>
+              <tr><th>شاخص</th><th>مبلغ</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>شهریه‌های دریافتی</td><td>${UI.money(summary.collected)}</td></tr>
+              <tr><td>مانده شهریه (بدهی)</td><td>${UI.money(summary.due)}</td></tr>
+              <tr><td>شهریه مورد انتظار کل</td><td>${UI.money(summary.expected)}</td></tr>
+            </tbody>
+          </table>
+          <h2>ریز شهریه شاگردان</h2>
+          <table>
+            <thead>
+              <tr><th>شناگر</th><th>ولی</th><th>شهریه</th><th>دریافتی</th><th>مانده</th></tr>
+            </thead>
+            <tbody>${settlementRows}</tbody>
+          </table>
         </section>
       </div>`;
 

@@ -2182,3 +2182,54 @@ html[data-theme="dark"] .chart line {
   stroke: rgba(232, 238, 246, 0.35);
 }
 
+.print-sheet {
+  display: none;
+}
+
+.print-sheet h1,
+.print-sheet h2 {
+  margin: 0 0 0.6rem;
+}
+
+.print-sheet table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1.25rem;
+}
+
+.print-sheet th,
+.print-sheet td {
+  border: 1px solid #cbd5e1;
+  padding: 0.45rem 0.6rem;
+  text-align: start;
+}
+
+.print-sheet th {
+  background: #f1f5f9;
+}
+
+@media print {
+  .panel-chrome,
+  .panel-nav,
+  .site-credit,
+  .toast,
+  .modal-backdrop,
+  .no-print {
+    display: none !important;
+  }
+
+  body,
+  html,
+  .panel-app,
+  main.page {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  .print-sheet {
+    display: block !important;
+    color: #111;
+    background: #fff;
+  }
+}
+
