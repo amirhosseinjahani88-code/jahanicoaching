@@ -132,6 +132,10 @@ const CoachViews = (() => {
 
   /* ---------- حضور و غیاب ---------- */
 
+  function attendanceKpi(stat, label, value, hint, tone) {
+    return UI.kpi(label, value, hint, tone).replace("<div ", `<div data-att-stat="${stat}" `);
+  }
+
   function attendance() {
     const sheet = SJ.todaySheet();
     const counts = SJ.todayCounts();
@@ -145,7 +149,7 @@ const CoachViews = (() => {
           <span class="avatar">${UI.escapeHtml(UI.initials(student.name))}</span>
           <div class="roster-name">
             ${UI.escapeHtml(student.name)}
-            <div class="muted" style="font-size:.88rem">${UI.escapeHtml(student.group)} • ${UI.escapeHtml(student.level)} • نرخ حضور ${UI.fa(SJ.attendanceRate(student.id))}٪</div>
+            <div class="muted" style="font-size:.88rem">${UI.escapeHtml(student.group)} • ${UI.escapeHtml(student.level)} • نرخ حضور <span data-att-rate>${UI.fa(SJ.attendanceRate(student.id))}</span>٪</div>
           </div>
           <div class="toggle-group">
             <button data-action="attendance:mark" data-id="${student.id}" data-value="present" aria-pressed="${status === "present"}">حاضر</button>
@@ -161,10 +165,10 @@ const CoachViews = (() => {
         ${UI.sectionTitle("حضور و غیاب هوشمند و ثبت وقایع", "ثبت سریع، تحلیل دقیق و ذخیره در پرونده شناگر.", "#/app")}
 
         <div class="grid">
-          ${UI.kpi("حاضر", UI.fa(counts.present), "شناگر")}
-          ${UI.kpi("تأخیر", UI.fa(counts.late), "شناگر")}
-          ${UI.kpi("غایب", UI.fa(counts.absent), "شناگر", counts.absent ? "kpi-warn" : "")}
-          ${UI.kpi("ثبت‌شده", `${UI.fa(counts.marked)} از ${UI.fa(counts.total)}`, TODAY_KEY)}
+          ${attendanceKpi("present", "حاضر", UI.fa(counts.present), "شناگر")}
+          ${attendanceKpi("late", "تأخیر", UI.fa(counts.late), "شناگر")}
+          ${attendanceKpi("absent", "غایب", UI.fa(counts.absent), "شناگر", counts.absent ? "kpi-warn" : "")}
+          ${attendanceKpi("marked", "ثبت‌شده", `${UI.fa(counts.marked)} از ${UI.fa(counts.total)}`, TODAY_KEY)}
         </div>
 
         <div class="two-col">

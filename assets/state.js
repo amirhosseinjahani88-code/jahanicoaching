@@ -32,7 +32,7 @@ const SJ = (() => {
       const isToday = date === TODAY_KEY;
       store[date] = {
         marks: isToday ? {} : marks,
-        notes: isToday ? "" : "جلسه طبق برنامه اجرا شد.",
+        notes: "",
         analysis: null,
         locked: !isToday && dayIndex < SESSION_DATES.length - 1,
       };
@@ -111,6 +111,22 @@ const SJ = (() => {
         if (key) {
           if (!parsed.accounts[key]) parsed.accounts[key] = parsed.coach;
           parsed.coach = parsed.accounts[key];
+        }
+      }
+      if (parsed.attendance && typeof parsed.attendance === "object") {
+        let cleared = false;
+        Object.values(parsed.attendance).forEach((sheet) => {
+          if (sheet && sheet.notes === "جلسه طبق برنامه اجرا شد.") {
+            sheet.notes = "";
+            cleared = true;
+          }
+        });
+        if (cleared) {
+          try {
+            localStorage.setItem(KEY, JSON.stringify(parsed));
+          } catch (err) {
+            /* اگر ذخیره ممکن نباشد، مقدار خالی فقط در همین نشست می‌ماند */
+          }
         }
       }
       return parsed;

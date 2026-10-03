@@ -467,9 +467,37 @@ APP.action("demo:sample", async () => {
 
 /* ---------- حضور و غیاب ---------- */
 
-APP.action("attendance:mark", (data) => {
-  SJ.mark(Number(data.id), data.value);
-  APP.render();
+APP.action("attendance:mark", (data, trigger) => {
+  const studentId = Number(data.id);
+  const status = data.value;
+  SJ.mark(studentId, status);
+
+  const row =
+    (trigger && trigger.closest(".roster-item")) ||
+    document.querySelector(`[data-action="attendance:mark"][data-id="${studentId}"]`)?.closest(".roster-item");
+  if (row) {
+    row.dataset.status = status;
+    row.querySelectorAll('[data-action="attendance:mark"]').forEach((btn) => {
+      btn.setAttribute("aria-pressed", btn.dataset.value === status ? "true" : "false");
+    });
+    const rate = row.querySelector("[data-att-rate]");
+    if (rate) rate.textContent = UI.fa(SJ.attendanceRate(studentId));
+  }
+
+  const counts = SJ.todayCounts();
+  const stats = {
+    present: UI.fa(counts.present),
+    late: UI.fa(counts.late),
+    absent: UI.fa(counts.absent),
+    marked: `${UI.fa(counts.marked)} از ${UI.fa(counts.total)}`,
+  };
+  Object.keys(stats).forEach((key) => {
+    const card = document.querySelector(`[data-att-stat="${key}"]`);
+    if (!card) return;
+    const strong = card.querySelector(".stat");
+    if (strong) strong.textContent = stats[key];
+    if (key === "absent") card.classList.toggle("kpi-warn", counts.absent > 0);
+  });
 });
 
 APP.action("attendance:all", (data) => {
