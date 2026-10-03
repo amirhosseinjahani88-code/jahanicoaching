@@ -83,7 +83,7 @@ const AIRemote = (() => {
       .map((s) => ({
         phase: String(s.phase).slice(0, 80),
         detail: String(s.detail).slice(0, 300),
-        meters: clampInt(s.meters, 25, 4000, 200),
+        meters: clampInt(s.meters, 25, 100000, 200),
         note: String(s.note || "").slice(0, 200),
       }));
     if (sets.length < 3) return null;
@@ -109,14 +109,41 @@ const AIRemote = (() => {
 {"title":"...","group":"...","level":"مبتدی|متوسط|پیشرفته|رقابتی","stroke":"کرال سینه|قورباغه|پروانه|کرال پشت","focus":"استقامت|سرعت|تکنیک|آستانه|استارت","minutes":60,"poolLength":25,"rateTarget":38,"coachTip":"...","sets":[{"phase":"...","detail":"...","meters":200,"note":"..."}]}
 ۴ تا ۶ بخش با ترتیب گرم‌کردن، تکنیک، ست اصلی، ست پا، سردکردن. meters مضرب ۲۵ باشد.`;
 
-  async function generateWorkout(brief) {
+  function workoutPrompt(targetMeters) {
+    const target = Math.round(Number(targetMeters));
+    const distanceRule =
+      target > 0
+        ? `اگر پارامتر متراژ هدف ارسال شده است، مجموع فواصل تمام بخش‌ها (گرم‌کردن + دریل + ست اصلی + ست پا + سردکردن) باید دقیقاً معادل ${target} متر باشد و نه کمتر و نه بیشتر. اگر مشخص نشده، متراژ متناسب با زمان جلسه تنظیم شود.`
+        : `اگر پارامتر متراژ هدف ارسال شده است، مجموع فواصل تمام بخش‌ها (گرم‌کردن + دریل + ست اصلی + ست پا + سردکردن) باید دقیقاً معادل متراژ هدف باشد و نه کمتر و نه بیشتر. اگر مشخص نشده، متراژ متناسب با زمان جلسه تنظیم شود. در این درخواست متراژ هدف مشخص نشده؛ هیچ سقف متراژ اجباری اعمال نکن و متراژ را متناسب با زمان جلسه، رده سنی و سطح پیشنهاد بده.`;
+    return `${WORKOUT_SYSTEM}\n${distanceRule}`;
+  }
+
+  async function generateWorkout(brief, targetMeters) {
     const text = String(brief || "").trim();
-    const offline = () => ({ ...AI.generateWorkout(AI.parseBrief(text)), engine: "offline" });
+    const parsed = AI.parseBrief(text);
+    const explicit = Math.round(Number(targetMeters));
+    const requested = explicit > 0 ? explicit : targetMeters === 0 || targetMeters === "" ? 0 : parsed.targetMeters || 0;
+    const offline = () => ({ ...AI.generateWorkout({ ...parsed, targetMeters: requested }), engine: "offline" });
     if (!text || !isEnabled()) return offline();
     try {
-      const { json, model } = await complete({ system: WORKOUT_SYSTEM, user: text });
+      const { json, model } = await complete({
+        system: workoutPrompt(requested),
+        user: JSON.stringify({
+          brief: text,
+          targetMeters: requested > 0 ? requested : null,
+          group: parsed.group,
+          level: parsed.level,
+          minutes: parsed.minutes,
+        }),
+      });
       const workout = normalizeWorkout(json);
       if (!workout) throw new Error("خروجی مدل قابل استفاده نبود.");
+      if (requested > 0) {
+        workout.sets = AI.fitSetMeters(workout.sets, requested);
+        workout.meters = workout.sets.reduce((sum, set) => sum + set.meters, 0);
+        workout.laps = Math.round(workout.meters / workout.poolLength);
+        workout.targetMeters = requested;
+      }
       return { ...workout, note: text, createdAt: offline().createdAt, engine: "ai", model };
     } catch (err) {
       console.warn("AI واقعی در دسترس نبود:", err?.message || err);

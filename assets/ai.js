@@ -44,9 +44,97 @@ const AI = (() => {
 
   /* ---------- تولید جلسه تمرین ---------- */
 
-  function generateWorkout({ group, level, stroke, minutes, focus, poolLength, note }) {
+  function phaseKind(phase) {
+    const text = String(phase || "");
+    if (/سرد/.test(text)) return "cool";
+    if (/پا/.test(text)) return "kick";
+    if (/اصلی/.test(text)) return "main";
+    if (/تکنیک|دریل|درِیل/.test(text)) return "drill";
+    if (/گرم/.test(text)) return "warm";
+    return "other";
+  }
+
+  /* فقط وقتی متراژ هدف بزرگ‌تر از صفر باشد جمع بخش‌ها را دقیقاً به همان عدد می‌رساند. */
+  function fitSetMeters(sets, targetMeters) {
+    const target = Math.round(Number(targetMeters));
+    if (!(target > 0) || !Array.isArray(sets) || !sets.length) return sets;
+
+    let step = target % 50 === 0 ? 50 : 25;
+    if (step * sets.length > target) step = 25;
+
+    const weights = sets.map((set) => {
+      const meters = Math.round(Number(set && set.meters));
+      return Number.isFinite(meters) && meters > 0 ? meters : 1;
+    });
+    const weightSum = weights.reduce((sum, meters) => sum + meters, 0) || 1;
+    const kinds = sets.map((set) => phaseKind(set && set.phase));
+    let main = kinds.lastIndexOf("main");
+    if (main < 0) main = weights.indexOf(Math.max(...weights));
+
+    const blocks = Math.floor(target / step);
+    const remainder = target - blocks * step;
+    const units = new Array(sets.length).fill(0);
+
+    if (blocks >= sets.length) {
+      weights.forEach((weight, index) => {
+        units[index] = Math.max(1, Math.round((weight / weightSum) * blocks));
+      });
+      let drift = units.reduce((sum, count) => sum + count, 0) - blocks;
+      let guard = 0;
+      while (drift > 0 && guard < 1000) {
+        guard += 1;
+        let donor = -1;
+        units.forEach((count, index) => {
+          if (count > 1 && (donor < 0 || count > units[donor])) donor = index;
+        });
+        if (donor < 0) break;
+        units[donor] -= 1;
+        drift -= 1;
+      }
+      if (drift < 0) units[main] -= drift;
+    } else {
+      const order = weights
+        .map((weight, index) => index)
+        .sort((a, b) => (a === main ? -1 : b === main ? 1 : weights[b] - weights[a]));
+      for (let block = 0; block < blocks; block += 1) units[order[block % order.length]] += 1;
+    }
+
+    const assigned = units.map((count) => count * step);
+    assigned[main] += target - assigned.reduce((sum, meters) => sum + meters, 0);
+    if (assigned[main] < 0) {
+      let debt = -assigned[main];
+      assigned[main] = 0;
+      sets.forEach((_, index) => {
+        if (index === main || debt <= 0) return;
+        const take = Math.min(assigned[index], debt);
+        assigned[index] -= take;
+        debt -= take;
+      });
+      assigned[main] = target - assigned.reduce((sum, meters) => sum + meters, 0);
+    }
+
+    return sets
+      .map((set, index) => ({
+        ...set,
+        meters: assigned[index],
+        detail: syncSetDetail(set.detail, assigned[index]),
+      }))
+      .filter((set) => set.meters > 0);
+  }
+
+  function syncSetDetail(detail, meters) {
+    const text = String(detail || "");
+    const match = text.match(/([۰-۹0-9]+)\s*[×x]\s*([۰-۹0-9]+)/);
+    if (!match) return text;
+    const rep = Number(String(match[2]).replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit))));
+    if (!rep || meters % rep !== 0) return text;
+    return text.replace(match[0], `${UI.fa(meters / rep)} × ${UI.fa(rep)}`);
+  }
+
+  function generateWorkout({ group, level, stroke, minutes, focus, poolLength, note, targetMeters }) {
     const perMinute = METERS_PER_MINUTE[level] || 38;
-    const total = roundTo(perMinute * minutes, 50);
+    const requested = Math.round(Number(targetMeters));
+    const total = requested > 0 ? requested : roundTo(perMinute * minutes, 50);
     const preset = FOCUS_PRESETS[focus] || FOCUS_PRESETS.استقامت;
 
     const warmupMeters = roundTo(total * 0.2, 50);
@@ -94,7 +182,8 @@ const AI = (() => {
       },
     ];
 
-    const meters = sets.reduce((sum, s) => sum + s.meters, 0);
+    const fitted = requested > 0 ? fitSetMeters(sets, requested) : sets;
+    const meters = fitted.reduce((sum, s) => sum + s.meters, 0);
     const laps = Math.round(meters / (poolLength || 25));
 
     return {
@@ -106,9 +195,10 @@ const AI = (() => {
       minutes,
       poolLength: poolLength || 25,
       rateTarget,
+      targetMeters: requested > 0 ? requested : 0,
       meters,
       laps,
-      sets,
+      sets: fitted,
       note: note || "",
       coachTip: coachTip(focus, level),
       createdAt: TODAY_KEY,
@@ -152,6 +242,7 @@ const AI = (() => {
     else if (/آستانه|لاکتات/.test(clean)) focus = "آستانه";
     else if (/استارت|دیواره|برگشت/.test(clean)) focus = "استارت";
 
+    const targetMatch = digits.match(/متراژ(?:\s*هدف)?\s*[:：]?\s*(\d{2,5})/);
     return {
       minutes: minutesMatch ? Math.min(150, Number(minutesMatch[1])) : 60,
       stroke,
@@ -159,6 +250,7 @@ const AI = (() => {
       group,
       focus,
       poolLength: /۵۰ متری|50 متری/.test(clean) ? 50 : 25,
+      targetMeters: targetMatch ? Number(targetMatch[1]) : 0,
       note: clean.trim(),
     };
   }
@@ -385,6 +477,7 @@ const AI = (() => {
   return {
     generateWorkout,
     parseBrief,
+    fitSetMeters,
     voice,
     analyzeSample,
     finaPoints,
