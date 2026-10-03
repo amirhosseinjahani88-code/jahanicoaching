@@ -548,6 +548,11 @@ textarea:focus {
   background: #f4fcf7;
 }
 
+.roster-item[data-status="late"] {
+  border-color: rgba(245, 158, 11, 0.55);
+  background: #fff8ee;
+}
+
 .roster-item[data-status="absent"] {
   border-color: rgba(239, 68, 68, 0.45);
   background: #fef6f6;
@@ -581,16 +586,30 @@ textarea:focus {
   font-weight: 700;
   background: #f1f5f9;
   color: var(--slate);
+  scroll-margin-top: 5.5rem;
+  scroll-margin-bottom: 6.5rem;
 }
 
-.toggle-group button[aria-pressed="true"][data-value="present"] {
+.toggle-group button:active {
+  transform: none;
+}
+
+.toggle-group button[aria-pressed="true"][data-value="present"],
+html[data-theme="dark"] .toggle-group button[aria-pressed="true"][data-value="present"] {
   background: var(--ok);
-  color: var(--white);
+  color: #fff;
 }
 
-.toggle-group button[aria-pressed="true"][data-value="absent"] {
+.toggle-group button[aria-pressed="true"][data-value="late"],
+html[data-theme="dark"] .toggle-group button[aria-pressed="true"][data-value="late"] {
+  background: var(--warn);
+  color: #1c1404;
+}
+
+.toggle-group button[aria-pressed="true"][data-value="absent"],
+html[data-theme="dark"] .toggle-group button[aria-pressed="true"][data-value="absent"] {
   background: var(--danger);
-  color: var(--white);
+  color: #fff;
 }
 
 .dropzone {
@@ -1960,6 +1979,11 @@ html[data-theme="dark"] .parent-portal {
 html[data-theme="dark"] .roster-item[data-status="present"] {
   background: #102418;
   border-color: rgba(22, 163, 74, 0.45);
+}
+
+html[data-theme="dark"] .roster-item[data-status="late"] {
+  background: #2a2112;
+  border-color: rgba(245, 158, 11, 0.5);
 }
 
 html[data-theme="dark"] .roster-item[data-status="absent"] {

@@ -157,6 +157,12 @@ const APP = (() => {
   function start() {
     window.addEventListener("hashchange", render);
 
+    document.addEventListener("mousedown", (event) => {
+      const mark = event.target.closest('[data-action="attendance:mark"]');
+      if (!mark) return;
+      event.preventDefault();
+    });
+
     document.addEventListener("click", (event) => {
       if (!event.target.closest(".nav-group")) {
         document.querySelectorAll(".nav-group.is-open").forEach((group) => {
@@ -468,6 +474,7 @@ APP.action("demo:sample", async () => {
 /* ---------- حضور و غیاب ---------- */
 
 APP.action("attendance:mark", (data, trigger) => {
+  const scrollY = window.scrollY;
   const studentId = Number(data.id);
   const status = data.value;
   SJ.mark(studentId, status);
@@ -497,6 +504,15 @@ APP.action("attendance:mark", (data, trigger) => {
     const strong = card.querySelector(".stat");
     if (strong) strong.textContent = stats[key];
     if (key === "absent") card.classList.toggle("kpi-warn", counts.absent > 0);
+  });
+
+  const keepScroll = () => {
+    if (window.scrollY !== scrollY) window.scrollTo(0, scrollY);
+  };
+  keepScroll();
+  requestAnimationFrame(() => {
+    keepScroll();
+    requestAnimationFrame(keepScroll);
   });
 });
 

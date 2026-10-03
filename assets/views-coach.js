@@ -152,9 +152,9 @@ const CoachViews = (() => {
             <div class="muted" style="font-size:.88rem">${UI.escapeHtml(student.group)} • ${UI.escapeHtml(student.level)} • نرخ حضور <span data-att-rate>${UI.fa(SJ.attendanceRate(student.id))}</span>٪</div>
           </div>
           <div class="toggle-group">
-            <button data-action="attendance:mark" data-id="${student.id}" data-value="present" aria-pressed="${status === "present"}">حاضر</button>
-            <button data-action="attendance:mark" data-id="${student.id}" data-value="late" aria-pressed="${status === "late"}">تأخیر</button>
-            <button data-action="attendance:mark" data-id="${student.id}" data-value="absent" aria-pressed="${status === "absent"}">غایب</button>
+            <button type="button" data-action="attendance:mark" data-id="${student.id}" data-value="present" aria-pressed="${status === "present"}">حاضر</button>
+            <button type="button" data-action="attendance:mark" data-id="${student.id}" data-value="late" aria-pressed="${status === "late"}">تأخیر</button>
+            <button type="button" data-action="attendance:mark" data-id="${student.id}" data-value="absent" aria-pressed="${status === "absent"}">غایب</button>
           </div>
         </div>`;
       })
