@@ -1077,9 +1077,123 @@ const AI = (() => {
     return items;
   }
 
+  function normPayName(value) {
+    return String(value || "")
+      .replace(/\u200c/g, " ")
+      .replace(/[ي]/g, "ی")
+      .replace(/[ك]/g, "ک")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function extractMoney(source, digits) {
+    const million = digits.match(/(\d+(?:\.\d+)?)\s*میلیون/);
+    if (million) return Math.round(Number(million[1]) * 1000000);
+    const shortMillion = digits.match(/(\d+(?:\.\d+)?)\s*م(?!ت|ر)/);
+    if (shortMillion) return Math.round(Number(shortMillion[1]) * 1000000);
+    const spokenMillion = source.match(/((?:یک|یه|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده)(?:\s+و\s+نیم)?)\s*میلیون/);
+    if (spokenMillion) {
+      const amount = spokenNumber(spokenMillion[1]);
+      if (amount) return Math.round(amount * 1000000);
+    }
+    const thousand = digits.match(/(\d+(?:\.\d+)?)\s*هزار/);
+    if (thousand) return Math.round(Number(thousand[1]) * 1000);
+    const spokenThousand = source.match(/((?:پانصد|دویست|سیصد|چهارصد|ششصد|هفتصد|هشتصد|نهصد|صد|پنجاه|بیست|سی|چهل|شصت|هفتاد|هشتاد|نود|یک|یه|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده)(?:\s+و\s+\S+)?)\s*هزار/);
+    if (spokenThousand) {
+      const amount = spokenNumber(spokenThousand[1]);
+      if (amount) return amount * 1000;
+    }
+    const plain = digits.match(/(\d{2,9})\s*(?:تومان|تومن)/);
+    return plain ? Number(plain[1]) : 0;
+  }
+
+  function paymentDate(source, digits) {
+    const explicit = digits.match(/(14\d{2})[/-](\d{1,2})[/-](\d{1,2})/);
+    if (explicit) return faSessionDate(explicit[1], Number(explicit[2]), Number(explicit[3]));
+    if (/پس\s*پریروز/.test(source)) return shiftJalali(TODAY_KEY, 3);
+    if (/پریروز/.test(source)) return shiftJalali(TODAY_KEY, 2);
+    if (/دیروز/.test(source)) return shiftJalali(TODAY_KEY, 1);
+    return TODAY_KEY;
+  }
+
+  function paymentMethod(source) {
+    if (/کارت/.test(source)) return "کارت به کارت";
+    if (/نقد/.test(source)) return "نقدی";
+    if (/واریز|پرداخت/.test(source)) return "کارت به کارت";
+    return "سایر";
+  }
+
+  function heardName(source, student) {
+    const text = normPayName(source);
+    const first = normPayName(student.name).split(" ")[0];
+    const start = text.indexOf(first);
+    if (start < 0) return first;
+    const words = text.slice(start).split(" ");
+    const skip = /^(امروز|دیروز|پریروز|تومان|تومن|میلیون|هزار|م|بابت|شهریه|واریز|کرد|کرده|زد|زده|داد|داده|کارت|نقد|نقدی|مبلغ)$/;
+    const kept = [];
+    words.forEach((word) => {
+      if (kept.length >= 2 || !word || skip.test(word) || /^\d/.test(briefDigits(word))) return;
+      kept.push(word);
+    });
+    return kept.join(" ") || first;
+  }
+
+  function matchPayStudent(source, students) {
+    const text = normPayName(source);
+    const list = students || [];
+    const exact = list.filter((student) => text.includes(normPayName(student.name)));
+    if (exact.length === 1) return { student: exact[0], kind: "exact", heard: exact[0].name };
+    const hits = list.filter((student) => {
+      const first = normPayName(student.name).split(" ")[0];
+      return first.length >= 2 && text.includes(first);
+    });
+    if (hits.length === 1) return { student: hits[0], kind: "close", heard: heardName(source, hits[0]) };
+    if (hits.length > 1) return { student: null, kind: "many", options: hits };
+    return { student: null, kind: "none" };
+  }
+
+  function parsePayment(text, students, hint) {
+    const source = String(text || "").replace(/\u200c/g, " ").trim();
+    const digits = briefDigits(source);
+    let amount = extractMoney(source, digits);
+    if (!amount && hint && Number(hint.amount) > 0) amount = Math.round(Number(hint.amount));
+    const date = paymentDate(source, digits);
+    const method = hint && /کارت|نقد/.test(String(hint.method || "")) ? paymentMethod(String(hint.method)) : paymentMethod(source);
+    const found = matchPayStudent(source, students);
+    let question = "";
+    let studentId = null;
+    let suggestedId = null;
+    if (found.kind === "exact") studentId = found.student.id;
+    else if (found.kind === "close" && normPayName(found.heard) !== normPayName(found.student.name)) {
+      suggestedId = found.student.id;
+      question = `شاگردی با نام ${found.heard} یافت نشد. آیا منظور شما ${found.student.name} است؟`;
+    } else if (found.kind === "close") {
+      studentId = found.student.id;
+    } else if (found.kind === "many") {
+      question = `چند شاگرد با این نام پیدا شد: ${found.options.map((student) => student.name).join("، ")}. نام کامل را بنویسید.`;
+    } else {
+      question = "شاگردی با این نام در فهرست نیست.";
+    }
+    if (!amount) question = question || "مبلغ پرداخت در جمله مشخص نیست.";
+    const linkedId = studentId || suggestedId;
+    return {
+      text: source,
+      studentId,
+      suggestedId,
+      studentName: linkedId ? (students.find((student) => student.id === linkedId) || {}).name || "" : "",
+      amount: amount || 0,
+      date,
+      method,
+      note: source.slice(0, 120),
+      question: amount ? question : question || "مبلغ پرداخت در جمله مشخص نیست.",
+      ready: !!studentId && amount > 0 && !question,
+    };
+  }
+
   return {
     generateWorkout,
     parseBrief,
+    parsePayment,
     fitSetMeters,
     voice,
     analyzeSample,

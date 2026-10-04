@@ -343,6 +343,27 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
     };
   }
 
+  async function extractPayment(text, students) {
+    const local = AI.parsePayment(text, students);
+    if (!isEnabled()) return { ...local, engine: "offline" };
+    try {
+      const { json } = await complete({
+        system: `تو استخراج‌کننده پرداخت شهریه از جمله مربی شنا هستی. حدس نزن. فقط JSON:
+{"studentName":"...","amount":0,"date":"${TODAY_KEY}","method":"کارت به کارت|نقدی|سایر","note":"..."}
+۲ میلیون تومان = 2000000. پانصد هزار تومان = 500000. ۲.۵ م = 2500000. امروز ${TODAY_KEY} است. دیروز را یک روز قبل بگذار. نام را همان‌طور که در جمله آمده بنویس و با فهرست عوضش نکن.`,
+        user: JSON.stringify({
+          text: String(text || "").slice(0, 400),
+          names: (students || []).map((student) => student.name),
+          today: TODAY_KEY,
+        }),
+      });
+      const parsed = AI.parsePayment(text, students, json || {});
+      return { ...parsed, engine: "ai" };
+    } catch (err) {
+      return { ...local, engine: "offline" };
+    }
+  }
+
   async function extractEvent(student, text, priorFacts, contextNote, dialogue) {
     const local = AI.extractEvent(student, text, priorFacts && priorFacts.record ? priorFacts : undefined);
     if (!isEnabled()) return { ...local, engine: "offline" };
@@ -534,6 +555,7 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
     biomechAnalyze,
     eventAdvice,
     extractEvent,
+    extractPayment,
     cockpitInsights,
     ocrReceipt,
     ocrAttendance,

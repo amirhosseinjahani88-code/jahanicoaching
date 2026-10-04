@@ -1052,6 +1052,28 @@ const CoachViews = (() => {
 
   /* ---------- دستیار مالی ---------- */
 
+  function payPreviewHtml(draft) {
+    if (!draft) return "";
+    if (draft.loading) return `<div class="ai-box"><strong>در حال خواندن جمله…</strong></div>`;
+    const who = draft.studentId ? SJ.studentById(draft.studentId) : draft.suggestedId ? SJ.studentById(draft.suggestedId) : null;
+    const due = who ? SJ.studentBalance(who.id).due : 0;
+    const nextDue = who && draft.amount ? Math.max(0, due - draft.amount) : due;
+    const canSave = draft.amount > 0 && (draft.studentId || draft.suggestedId);
+    return `<div class="ai-box stack">
+      <strong>پیش‌نمایش پرداخت</strong>
+      ${draft.question ? `<p>${UI.escapeHtml(draft.question)}</p>` : ""}
+      <div class="ledger-row"><span>شاگرد</span><strong>${UI.escapeHtml(who ? who.name : "نامشخص")}</strong></div>
+      <div class="ledger-row"><span>مبلغ</span><strong class="num">${draft.amount ? UI.money(draft.amount) : "نامشخص"}</strong></div>
+      <div class="ledger-row"><span>تاریخ</span><span>${UI.escapeHtml(draft.date || TODAY_KEY)}</span></div>
+      <div class="ledger-row"><span>روش</span><span>${UI.escapeHtml(draft.method || "—")}</span></div>
+      ${who && draft.amount ? `<p class="muted">مانده فعلی ${UI.money(due)}؛ بعد از ثبت ${UI.money(nextDue)}</p>` : ""}
+      <div class="row">
+        ${canSave ? `<button class="btn-primary btn-sm" type="button" data-action="finance:confirm-pay">${draft.suggestedId && !draft.studentId ? "بله، همین شاگرد را ثبت کن" : "تأیید و ثبت"}</button>` : ""}
+        <button class="btn-quiet" type="button" data-action="finance:cancel-pay">انصراف</button>
+      </div>
+    </div>`;
+  }
+
   function financePage() {
     if (!SJ.isPro()) {
       return UI.shell(
@@ -1147,6 +1169,19 @@ const CoachViews = (() => {
             </div>
           </section>
         </div>
+
+        <section class="card stack">
+          <h2 class="title-md">ثبت هوشمند پرداخت</h2>
+          <label class="field">
+            <span>متن یا ویس پرداخت</span>
+            <textarea id="pay-brief" rows="3" placeholder="مثلاً نیما فتحی امروز ۲ میلیون تومان بابت شهریه واریز کرد">${UI.escapeHtml(APP.ui.payBrief || "")}</textarea>
+          </label>
+          <div class="row">
+            <button class="btn-primary" type="button" id="pay-parse" data-action="finance:parse">تحلیل و ثبت هوشمند</button>
+            <button class="btn-white" type="button" data-action="finance:voice">🎙️ ضبط ویس</button>
+          </div>
+          <div id="pay-preview">${payPreviewHtml(APP.ui.paymentDraft)}</div>
+        </section>
 
         <section class="card stack">
           <h2 class="title-md">ثبت دستی پرداخت</h2>
@@ -1345,6 +1380,7 @@ const CoachViews = (() => {
     eventTimelineHtml,
     eventClarifyHtml,
     recordBoard,
+    payPreviewHtml,
     workoutPage,
     sessionsPage,
     sessionDetailHtml,

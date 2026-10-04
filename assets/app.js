@@ -18,6 +18,8 @@ const APP = (() => {
     biomechStroke: "",
     eventPending: null,
     recordFocus: {},
+    payBrief: "",
+    paymentDraft: null,
     biomechResult: null,
     biomechPanel: null,
     ocrResult: null,
@@ -967,6 +969,77 @@ APP.action("finance:remind", async (data) => {
   const message = fillReminder(student, balance);
   const copied = await copyText(message);
   UI.toast(copied ? "پیام یادآوری در کلیپ‌بورد کپی شد." : "کپی پیام ممکن نشد.");
+});
+
+function paintPayPreview() {
+  const box = document.getElementById("pay-preview");
+  if (box) box.innerHTML = CoachViews.payPreviewHtml(APP.ui.paymentDraft);
+}
+
+APP.action("finance:parse", async () => {
+  const text = APP.value("pay-brief", APP.ui.payBrief).trim();
+  if (!text) {
+    UI.toast("جمله پرداخت را بنویسید یا ویس بگیرید.");
+    return;
+  }
+  APP.ui.payBrief = text;
+  const button = document.getElementById("pay-parse");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "در حال تحلیل…";
+  }
+  APP.ui.paymentDraft = { loading: true };
+  paintPayPreview();
+  const draft = await AIRemote.extractPayment(text, SJ.students());
+  APP.ui.paymentDraft = draft;
+  if (button) {
+    button.disabled = false;
+    button.textContent = "تحلیل و ثبت هوشمند";
+  }
+  paintPayPreview();
+});
+
+APP.action("finance:voice", () => {
+  const finish = (transcript) => {
+    APP.ui.payBrief = transcript;
+    const input = document.getElementById("pay-brief");
+    if (input) input.value = transcript;
+    const button = document.getElementById("pay-parse");
+    if (button) button.click();
+  };
+  if (!AI.voice.available()) {
+    finish("نیما فتحی امروز ۲ میلیون تومان بابت شهریه واریز کرد");
+    return;
+  }
+  UI.toast("در حال شنیدن... مبلغ و نام شاگرد را بگویید.");
+  AI.voice.start(finish, () => finish("نیما فتحی امروز ۲ میلیون تومان بابت شهریه واریز کرد"));
+});
+
+APP.action("finance:cancel-pay", () => {
+  APP.ui.paymentDraft = null;
+  paintPayPreview();
+});
+
+APP.action("finance:confirm-pay", () => {
+  const draft = APP.ui.paymentDraft;
+  const studentId = draft && (draft.studentId || draft.suggestedId);
+  const student = SJ.studentById(studentId);
+  if (!draft || !student || !draft.amount) {
+    UI.toast("پیش‌نمایش پرداخت کامل نیست.");
+    return;
+  }
+  SJ.addPayment({
+    studentId: student.id,
+    amount: draft.amount,
+    date: draft.date || TODAY_KEY,
+    method: draft.method || "کارت به کارت",
+    note: draft.note || draft.text || "",
+    source: "manual",
+  });
+  APP.ui.paymentDraft = null;
+  APP.ui.payBrief = "";
+  UI.toast(`پرداخت ${UI.money(draft.amount)} برای ${student.name} ثبت شد.`);
+  APP.render();
 });
 
 APP.action("finance:pay", () => {
