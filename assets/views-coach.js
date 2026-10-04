@@ -340,7 +340,7 @@ const CoachViews = (() => {
     const best = student.times[student.times.length - 1];
     const points = AI.finaPoints(student.event, best);
     const rate = SJ.attendanceRate(student.id);
-    const samples = SJ.biomech(student.id);
+    const samples = SJ.biomech(student.id, student.stroke);
     const analyzed = samples.map((s) => AI.analyzeSample({ distance: s.distance, time: s.time, strokes: s.strokes }));
     if (AIRemote.isEnabled() && !APP.ui.biomechAi[student.id]) {
       APP.ui.biomechAi[student.id] = { loading: true };
@@ -863,20 +863,22 @@ const CoachViews = (() => {
 
     const studentId = APP.ui.biomechStudent || SJ.students()[0].id;
     const student = SJ.studentById(studentId);
-    const samples = SJ.biomech(studentId);
+    const stroke = STROKES.includes(APP.ui.biomechStroke) ? APP.ui.biomechStroke : student.stroke;
+    const samples = SJ.biomech(studentId, stroke);
     const analyzed = samples.map((s) => AI.analyzeSample({ distance: s.distance, time: s.time, strokes: s.strokes }));
-    if (AIRemote.isEnabled() && !APP.ui.biomechAi[student.id]) {
-      APP.ui.biomechAi[student.id] = { loading: true };
-      AIRemote.biomechExplain(student).then((verdict) => {
-        if (!APP.ui.biomechAi[student.id] || APP.ui.biomechAi[student.id].loading) {
-          APP.ui.biomechAi[student.id] = verdict;
+    const cacheKey = `${student.id}:${stroke}`;
+    if (AIRemote.isEnabled() && !APP.ui.biomechAi[cacheKey]) {
+      APP.ui.biomechAi[cacheKey] = { loading: true };
+      AIRemote.biomechExplain(student, stroke).then((verdict) => {
+        if (!APP.ui.biomechAi[cacheKey] || APP.ui.biomechAi[cacheKey].loading) {
+          APP.ui.biomechAi[cacheKey] = verdict;
         }
         if (APP.ui.biomechPanel && APP.ui.biomechPanel.status) return;
         if ((window.location.hash || "") === "#/app/biomech") APP.render();
       });
     }
-    const cachedBio = APP.ui.biomechAi[student.id];
-    const verdict = cachedBio && !cachedBio.loading ? cachedBio : AI.biomechVerdict(samples, student.stroke);
+    const cachedBio = APP.ui.biomechAi[cacheKey];
+    const verdict = cachedBio && !cachedBio.loading ? cachedBio : AI.biomechVerdict(samples, stroke);
     const result = APP.ui.biomechResult;
 
     const body = `
@@ -893,6 +895,14 @@ const CoachViews = (() => {
                   .join("")}
               </select>
             </label>
+            <label class="field">
+              <span>نوع شنا</span>
+              <select id="bio-stroke">
+                ${["کرال سینه", "کرال پشت", "قورباغه", "پروانه"]
+                  .map((name) => `<option value="${name}" ${stroke === name ? "selected" : ""}>${name}</option>`)
+                  .join("")}
+              </select>
+            </label>
             <label class="field"><span>مسافت (متر)</span><input id="bio-distance" value="25" inputmode="decimal" /></label>
             <label class="field"><span>زمان (ثانیه)</span><input id="bio-time" value="16.2" inputmode="decimal" /></label>
             <label class="field"><span>تعداد دست‌کشی</span><input id="bio-strokes" value="20" inputmode="numeric" /></label>
@@ -906,7 +916,7 @@ const CoachViews = (() => {
 
         <div class="two-col">
           <section class="card stack">
-            <h2 class="title-md">روند ریت ${UI.escapeHtml(student.name)}</h2>
+            <h2 class="title-md">روند ریت ${UI.escapeHtml(stroke)} — ${UI.escapeHtml(student.name)}</h2>
             ${
               analyzed.length > 1
                 ? UI.lineChart({
@@ -914,7 +924,7 @@ const CoachViews = (() => {
                     values: analyzed.map((s) => s.rate),
                     unit: "دست‌کشی",
                   })
-                : '<p class="muted">برای نمودار، حداقل دو تست لازم است.</p>'
+                : `<p class="muted">برای نمودار ${UI.escapeHtml(stroke)} حداقل دو تست لازم است.</p>`
             }
           </section>
           <section class="card stack">
@@ -927,13 +937,14 @@ const CoachViews = (() => {
         </div>
 
         <section class="card stack">
-          <h2 class="title-md">تست‌های ثبت‌شده</h2>
+          <h2 class="title-md">تست‌های ثبت‌شده ${UI.escapeHtml(stroke)}</h2>
           <div class="stack">
             ${samples
               .map((s, i) => {
                 const a = analyzed[i];
                 return `<div class="ledger-row">
                   <span>${UI.escapeHtml(s.date)}</span>
+                  <span class="badge badge-blue">${UI.escapeHtml(s.stroke || stroke)}</span>
                   <span class="num">${UI.fa(s.distance)} متر در ${UI.secs(s.time)} ثانیه</span>
                   <span class="num">${UI.fa(s.strokes)} دست</span>
                   <span class="num">ریت ${UI.fa(a.rate)}</span>

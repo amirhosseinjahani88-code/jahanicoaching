@@ -426,7 +426,7 @@ const AI = (() => {
   function parentReport(student) {
     const times = student.times;
     const delta = times[0] - times[times.length - 1];
-    const samples = SJ.biomech(student.id);
+    const samples = SJ.biomech(student.id, student.stroke);
     const verdict = biomechVerdict(samples, student.stroke);
     const points = finaPoints(student.event, times[times.length - 1]);
     const rate = SJ.attendanceRate(student.id);

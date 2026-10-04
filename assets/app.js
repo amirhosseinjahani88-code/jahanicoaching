@@ -16,6 +16,7 @@ const APP = (() => {
     studentQuery: "",
     studentGroup: "همه",
     biomechStudent: null,
+    biomechStroke: "",
     biomechResult: null,
     biomechPanel: null,
     ocrResult: null,
@@ -212,6 +213,13 @@ const APP = (() => {
         render();
       } else if (node.id === "bio-student") {
         ui.biomechStudent = Number(node.value);
+        const picked = SJ.studentById(ui.biomechStudent);
+        ui.biomechStroke = picked ? picked.stroke : ui.biomechStroke;
+        ui.biomechResult = null;
+        ui.biomechPanel = null;
+        render();
+      } else if (node.id === "bio-stroke") {
+        ui.biomechStroke = node.value;
         ui.biomechResult = null;
         ui.biomechPanel = null;
         render();
@@ -798,7 +806,10 @@ APP.action("bio:calc", async () => {
     return;
   }
   const student = SJ.studentById(APP.ui.biomechStudent || SJ.students()[0].id);
-  const sample = { distance, time, strokes };
+  const chosen = (document.getElementById("bio-stroke") && document.getElementById("bio-stroke").value) || APP.ui.biomechStroke || student.stroke;
+  const stroke = STROKES.includes(chosen) ? chosen : student.stroke;
+  APP.ui.biomechStroke = stroke;
+  const sample = { distance, time, strokes, stroke };
   APP.ui.biomechResult = AI.analyzeSample(sample);
   APP.ui.biomechPanel = { status: "loading", error: "", verdict: null };
   paintBiomech();
@@ -840,9 +851,12 @@ APP.action("bio:save", () => {
   }
   const studentId = APP.ui.biomechStudent || SJ.students()[0].id;
   const student = SJ.studentById(studentId);
-  SJ.addBiomech(studentId, { date: TODAY_KEY, distance, time, strokes, stroke: student.stroke });
+  const chosen = (document.getElementById("bio-stroke") && document.getElementById("bio-stroke").value) || APP.ui.biomechStroke || student.stroke;
+  const stroke = STROKES.includes(chosen) ? chosen : student.stroke;
+  APP.ui.biomechStroke = stroke;
+  SJ.addBiomech(studentId, { date: TODAY_KEY, distance, time, strokes, stroke });
   APP.ui.biomechResult = AI.analyzeSample({ distance, time, strokes });
-  UI.toast(`تست در پرونده ${student.name} ثبت شد.`);
+  UI.toast(`تست ${stroke} در پرونده ${student.name} ثبت شد.`);
   APP.render();
 });
 

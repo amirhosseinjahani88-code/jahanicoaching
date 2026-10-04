@@ -244,16 +244,17 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
     return err instanceof Error ? err : new Error("تحلیل انجام نشد.");
   }
 
-  async function biomechExplain(student) {
-    const samples = SJ.biomech(student.id);
-    const fallback = () => ({ ...AI.biomechVerdict(samples, student.stroke), engine: "offline" });
+  async function biomechExplain(student, stroke) {
+    const chosen = STROKES.includes(stroke) ? stroke : student.stroke;
+    const samples = SJ.biomech(student.id, chosen);
+    const fallback = () => ({ ...AI.biomechVerdict(samples, chosen), engine: "offline" });
     if (!isEnabled()) return fallback();
     const local = fallback();
     const analyzed = samples.map((s) => AI.analyzeSample({ distance: s.distance, time: s.time, strokes: s.strokes }));
     try {
       const { json } = await complete({
-        system: `تو آنالیزور بیومکانیک شنا هستی. اعداد از قبل حساب شده‌اند؛ آن‌ها را عوض نکن. فقط JSON: {"headline":"...","notes":["...","..."]}. ۲ تا ۴ نکته اجرایی.`,
-        user: `شناگر ${student.name}، شنا ${student.stroke}. نمونه‌ها: ${JSON.stringify(analyzed)}. جمع‌بندی فعلی: ${local.headline}.`,
+        system: `تو آنالیزور بیومکانیک شنا هستی. اعداد از قبل حساب شده‌اند؛ آن‌ها را عوض نکن. فقط JSON: {"headline":"...","notes":["...","..."]}. ۲ تا ۴ نکته اجرایی درباره همین شنا.`,
+        user: `شناگر ${student.name}، شنا ${chosen}. نمونه‌ها: ${JSON.stringify(analyzed)}. جمع‌بندی فعلی: ${local.headline}.`,
       });
       return readBiomechJson(json, local);
     } catch (err) {
@@ -289,13 +290,14 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
     const metrics = AI.analyzeSample(sample);
     const recordTime = student.times[student.times.length - 1];
     const fina = AI.finaPoints(student.event, recordTime);
-    const local = AI.biomechVerdict([{ ...sample, stroke: student.stroke }], student.stroke);
+    const stroke = STROKES.includes(sample.stroke) ? sample.stroke : student.stroke;
+    const local = AI.biomechVerdict([{ ...sample, stroke }], stroke);
     try {
       const { json } = await complete({
-        system: `تو آنالیزور بیومکانیک شنا هستی. اعداد را عوض نکن. فقط JSON: {"headline":"...","notes":["...","..."]}. ۲ تا ۴ جمله درباره همین تست: ریت استروک، DPS و امتیاز FINA. جمله کلیشه‌ای ممنوع است.`,
+        system: `تو آنالیزور بیومکانیک شنا هستی. اعداد را عوض نکن. فقط JSON: {"headline":"...","notes":["...","..."]}. ۲ تا ۴ جمله درباره همین تست و همین شنا: ریت استروک، DPS و امتیاز FINA. جمله کلیشه‌ای ممنوع است.`,
         user: JSON.stringify({
           name: student.name,
-          stroke: student.stroke,
+          stroke,
           event: student.event,
           distance: sample.distance,
           time: sample.time,

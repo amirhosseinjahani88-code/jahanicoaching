@@ -402,7 +402,7 @@ const PublicViews = (() => {
     const report = cachedReport && !cachedReport.loading ? cachedReport : AI.parentReport(student);
     const balance = SJ.studentBalance(student.id);
     const sessionsLeft = Math.max(0, student.sessions - student.used);
-    const samples = SJ.biomech(student.id).map((s) => AI.analyzeSample({ distance: s.distance, time: s.time, strokes: s.strokes }));
+    const samples = SJ.biomech(student.id, student.stroke).map((s) => AI.analyzeSample({ distance: s.distance, time: s.time, strokes: s.strokes }));
 
     return UI.publicShell(`
       <div class="parent-portal">
@@ -435,7 +435,7 @@ const PublicViews = (() => {
           ${
             samples.length
               ? `<section class="card stack">
-                  <h2 class="title-md">نمودار ریت دست (دست‌کشی در دقیقه)</h2>
+                  <h2 class="title-md">نمودار ریت دست ${UI.escapeHtml(student.stroke)}</h2>
                   ${UI.lineChart({
                     labels: samples.map((_, i) => `تست ${UI.fa(i + 1)}`),
                     values: samples.map((s) => s.rate),

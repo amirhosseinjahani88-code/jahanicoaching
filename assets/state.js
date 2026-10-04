@@ -59,16 +59,36 @@ const SJ = (() => {
     return list;
   }
 
+  function emptyBiomech() {
+    return { "کرال سینه": [], "کرال پشت": [], "قورباغه": [], "پروانه": [] };
+  }
+
+  function groupBiomech(value) {
+    const grouped = emptyBiomech();
+    const list = Array.isArray(value)
+      ? value
+      : STROKES.flatMap((stroke) =>
+          value && Array.isArray(value[stroke]) ? value[stroke].map((sample) => ({ ...sample, stroke: sample.stroke || stroke })) : []
+        );
+    list.forEach((sample) => {
+      const stroke = STROKES.includes(sample.stroke) ? sample.stroke : "کرال سینه";
+      grouped[stroke].push({ ...sample, stroke });
+    });
+    return grouped;
+  }
+
   function seedBiomech() {
     const store = {};
     STUDENTS.forEach((s) => {
-      store[s.id] = s.biomech.map((sample, i) => ({
-        date: SESSION_DATES[SESSION_DATES.length - s.biomech.length + i] || SESSION_DATES[i],
-        distance: sample.d,
-        time: sample.t,
-        strokes: sample.s,
-        stroke: s.stroke,
-      }));
+      store[s.id] = groupBiomech(
+        s.biomech.map((sample, i) => ({
+          date: SESSION_DATES[SESSION_DATES.length - s.biomech.length + i] || SESSION_DATES[i],
+          distance: sample.d,
+          time: sample.t,
+          strokes: sample.s,
+          stroke: s.stroke,
+        }))
+      );
     });
     return store;
   }
@@ -125,6 +145,11 @@ const SJ = (() => {
           if (!parsed.accounts[key]) parsed.accounts[key] = parsed.coach;
           parsed.coach = parsed.accounts[key];
         }
+      }
+      if (parsed.biomech && typeof parsed.biomech === "object") {
+        Object.keys(parsed.biomech).forEach((id) => {
+          parsed.biomech[id] = groupBiomech(parsed.biomech[id]);
+        });
       }
       if (parsed.attendance && typeof parsed.attendance === "object") {
         let cleared = false;
@@ -486,13 +511,24 @@ const SJ = (() => {
 
   /* ---------- بیومکانیک ---------- */
 
-  function biomech(studentId) {
-    return state.biomech[studentId] || [];
+  function biomech(studentId, stroke) {
+    const bag = groupBiomech(state.biomech[studentId]);
+    state.biomech[studentId] = bag;
+    if (stroke && STROKES.includes(stroke)) return bag[stroke];
+    return STROKES.flatMap((name) => bag[name]);
   }
 
   function addBiomech(studentId, sample) {
-    if (!state.biomech[studentId]) state.biomech[studentId] = [];
-    state.biomech[studentId].push(sample);
+    const stroke = STROKES.includes(sample.stroke) ? sample.stroke : "کرال سینه";
+    const bag = groupBiomech(state.biomech[studentId]);
+    bag[stroke].push({
+      date: sample.date || TODAY_KEY,
+      distance: sample.distance,
+      time: sample.time,
+      strokes: sample.strokes,
+      stroke,
+    });
+    state.biomech[studentId] = bag;
     save();
   }
 
