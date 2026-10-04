@@ -365,6 +365,7 @@ const AI = (() => {
       dateMissing: false,
       saysToday: false,
       saysOther: false,
+      unclear: false,
     };
   }
 
@@ -374,16 +375,37 @@ const AI = (() => {
 
   function splitClauses(text) {
     return eventDigits(text)
-      .split(/[،,؛;\n]+|\s+و\s+(?=رکورد|تعداد|ریت|غایب|حاضر|تأخیر|تاخیر|جلسه|زمان)|(?=رکورد|تعداد\s*دست|دست\s*کشی|ریت|جلسه\s)/)
+      .split(/[،,؛;\n]+|\s+و\s+(?=رکورد|تعداد|ریت|غایب|حاضر|تأخیر|تاخیر|جلسه|زمان|رو\s)|(?=رکورد|تعداد\s*دست|دست\s*کشی|ریت|جلسه\s|تاخیر\s*داشت|تأخیر\s*داشت|رو\s*تاخیر|رو\s*تأخیر)/)
       .map((part) => part.trim())
       .filter(Boolean);
   }
 
+  function isAttendanceClause(clause) {
+    return /غایب|نیامد|حاضر|تأخیر|تاخیر|دیر آمد/.test(clause);
+  }
+
+  function isBiomechClause(clause) {
+    return /ریت|دست\s*کشی|بیومکانیک|پیشروی|تعداد\s*دست|\d+\s*دست|دست/.test(clause);
+  }
+
+  function isRecordClause(clause) {
+    return /رکورد|زمان|ثانیه|کاهش|افزایش|کم شد|زیاد شد|بهتر شد|بدتر شد|افت کرد|خوب بود|عالی بود|عالی شد|رکورد زد|سریع\s*تر شد|سریعتر شد/.test(clause);
+  }
+
   function clauseKind(clause) {
-    if (/غایب|نیامد|حاضر|تأخیر|تاخیر|دیر آمد/.test(clause)) return "attendance";
-    if (/ریت|دست\s*کشی|بیومکانیک|پیشروی|تعداد\s*دست|\d+\s*دست|دست/.test(clause)) return "biomech";
-    if (/رکورد|زمان|ثانیه|کاهش|افزایش|کم شد|زیاد شد|بهتر شد|بدتر شد|افت کرد|خوب بود|عالی شد|رکورد زد/.test(clause)) return "record";
+    if (isAttendanceClause(clause) && !isBiomechClause(clause) && !isRecordClause(clause)) return "attendance";
+    if (isBiomechClause(clause) && !isRecordClause(clause)) return "biomech";
+    if (isRecordClause(clause)) return "record";
+    if (isAttendanceClause(clause)) return "attendance";
     return "loose";
+  }
+
+  function explicitAttendance(clause) {
+    if (/غایب|نیامد/.test(clause)) return "absent";
+    if (/دیر آمد|با تأخیر آمد|با تاخیر آمد|تأخیر در ورود|تاخیر در ورود/.test(clause)) return "late";
+    if (/حاضر/.test(clause)) return "present";
+    if (/تأخیر|تاخیر/.test(clause)) return "ambiguous";
+    return null;
   }
 
   function mentionedDistances(text) {
@@ -552,9 +574,14 @@ const AI = (() => {
 
   function fillAttendance(branch, clause) {
     branch.active = true;
-    if (/غایب|نیامد/.test(clause)) branch.status = "absent";
-    else if (/تأخیر|تاخیر|دیر آمد|با تأخیر/.test(clause)) branch.status = "late";
-    else if (/حاضر/.test(clause)) branch.status = "present";
+    const status = explicitAttendance(clause);
+    if (status === "ambiguous") {
+      branch.unclear = true;
+      branch.status = null;
+    } else if (status) {
+      branch.status = status;
+      branch.unclear = false;
+    }
     const when = resolveSessionMention(clause);
     branch.saysToday = branch.saysToday || when.saysToday;
     branch.saysOther = branch.saysOther || when.saysOther;
@@ -572,10 +599,9 @@ const AI = (() => {
   function parseFacts(text) {
     const facts = blankFacts();
     splitClauses(text).forEach((clause) => {
-      const kind = clauseKind(clause);
-      if (kind === "record") fillRecord(facts.record, clause);
-      else if (kind === "biomech") fillBiomech(facts.biomech, clause);
-      else if (kind === "attendance") fillAttendance(facts.attendance, clause);
+      if (isRecordClause(clause)) fillRecord(facts.record, clause);
+      if (isBiomechClause(clause)) fillBiomech(facts.biomech, clause);
+      if (isAttendanceClause(clause)) fillAttendance(facts.attendance, clause);
     });
     return facts;
   }
@@ -589,6 +615,8 @@ const AI = (() => {
     });
     if (next && next.sessionDate) branch.dateMissing = false;
     else if (next && next.dateMissing === true) branch.dateMissing = true;
+    if (next && next.status) branch.unclear = false;
+    else if (next && next.unclear === true && !next.status) branch.unclear = true;
     return branch;
   }
 
@@ -637,10 +665,7 @@ const AI = (() => {
   function recordQuestion(branch) {
     if (!branch.active) return null;
     const hasNumber = branch.delta != null || branch.exactTime != null;
-    if (!hasNumber && branch.stroke && branch.distance) {
-      return `رکورد ${UI.fa(branch.distance)} متر ${branch.stroke} چه تغییری کرد؟ (مثلاً چند ثانیه کاهش یا زمان دقیق جدید چقدر شد؟)`;
-    }
-    if (!hasNumber) return "این رکورد چه تغییری کرد؟ (مثلاً چند ثانیه کاهش یا زمان دقیق جدید چقدر شد؟)";
+    if (!hasNumber) return "میزان تغییر یا زمان جدید دقیق چقدر بود؟";
     if (!branch.stroke && !branch.distance) {
       const amount = branch.delta != null ? Math.abs(branch.delta) : branch.exactTime;
       return `مسافت و نوع شنای رکورد ${UI.fa(amount)} ثانیه چیست؟`;
@@ -652,23 +677,21 @@ const AI = (() => {
     return `برای ثبت رکورد هنوز ${missing.join(" و ")} مشخص نیست.`;
   }
 
-  function biomechSpan(branch) {
-    return branch.distance != null || branch.exactTime != null;
-  }
-
   function biomechQuestion(branch) {
     if (!branch.active) return null;
-    const strokeName = branch.stroke === "کرال سینه" ? "شنای آزاد" : branch.stroke;
-    if (branch.stroke && branch.strokeCount != null && !biomechSpan(branch)) {
-      return `${UI.fa(branch.strokeCount)} دست‌کشی در ${strokeName} در چه مسافتی (۲۵/۵۰/۱۰۰ متر) یا چه زمانی ثبت شده است؟`;
+    if (branch.strokeCount != null && (branch.distance == null || branch.exactTime == null)) {
+      return `این ${UI.fa(branch.strokeCount)} دست در چه مسافتی (۲۵/۵۰/۱۰۰) و با چه زمانی بود؟`;
     }
-    if (branch.stroke && branch.rate != null && !biomechSpan(branch)) {
+    if (branch.strokeCount != null && !branch.stroke) return "این تعداد دست برای کدام شنا بود؟";
+    const strokeName = branch.stroke === "کرال سینه" ? "شنای آزاد" : branch.stroke;
+    if (branch.stroke && branch.rate != null && branch.distance == null && branch.exactTime == null) {
       return `ریت ${UI.fa(branch.rate)} در ${strokeName} در چه مسافتی (۲۵/۵۰/۱۰۰ متر) یا چه زمانی ثبت شده است؟`;
     }
-    if (branch.stroke && biomechSpan(branch) && (branch.strokeCount != null || branch.rate != null)) return null;
+    if (branch.rate != null && branch.stroke && (branch.distance != null || branch.exactTime != null)) return null;
+    if (branch.strokeCount != null && branch.stroke && branch.distance != null && branch.exactTime != null) return null;
     const missing = [];
     if (!branch.stroke) missing.push("شنا");
-    if (!biomechSpan(branch)) missing.push("مسافت یا زمان");
+    if (branch.distance == null && branch.exactTime == null) missing.push("مسافت یا زمان");
     if (branch.strokeCount == null && branch.rate == null) missing.push("تعداد دست");
     if (!missing.length) return null;
     return `برای ثبت بیومکانیک هنوز ${missing.join(" و ")} مشخص نیست.`;
@@ -676,6 +699,7 @@ const AI = (() => {
 
   function attendanceQuestion(branch) {
     if (!branch.active) return null;
+    if (branch.unclear || !branch.status) return "منظورتان غایب بود، تاخیر در ورود، یا حاضر بود؟";
     if (branch.saysToday && branch.saysOther) return "این غیبت مربوط به جلسه امروز است یا جلسه تاریخ مشخصی؟";
     if (branch.dateMissing) {
       const when = branch.relativeLabel ? `${branch.relativeLabel} (${branch.attemptedDate})` : branch.attemptedDate;
@@ -692,12 +716,15 @@ const AI = (() => {
     const questions = [recordQuestion(facts.record), biomechQuestion(facts.biomech), attendanceQuestion(facts.attendance)].filter(Boolean);
     const updates = [];
 
-    if (!questions.length && facts.record.active) {
+    const recordReady = facts.record.active && facts.record.stroke && facts.record.distance && (facts.record.delta != null || facts.record.exactTime != null);
+    const countReady = facts.biomech.strokeCount != null && facts.biomech.stroke && facts.biomech.distance != null && facts.biomech.exactTime != null;
+    const rateReady = facts.biomech.rate != null && facts.biomech.stroke && (facts.biomech.distance != null || facts.biomech.exactTime != null);
+    if (!questions.length && recordReady) {
       const baseline = facts.record.exactTime == null ? SJ.latestRecordTime(student, facts.record.stroke, facts.record.distance) : null;
       const time = facts.record.exactTime != null ? facts.record.exactTime : baseline == null ? null : Number((baseline + facts.record.delta).toFixed(2));
       updates.push({ type: "record", stroke: facts.record.stroke, distance: facts.record.distance, time, delta: facts.record.delta });
     }
-    if (!questions.length && facts.biomech.active) {
+    if (!questions.length && facts.biomech.active && (countReady || rateReady)) {
       const count = facts.biomech.strokeCount != null
         ? facts.biomech.strokeCount
         : facts.biomech.rate != null && facts.biomech.exactTime != null
@@ -712,7 +739,7 @@ const AI = (() => {
         rate: facts.biomech.rate,
       });
     }
-    if (!questions.length && facts.attendance.active) {
+    if (!questions.length && facts.attendance.active && facts.attendance.status) {
       const date = facts.attendance.sessionDate || TODAY_KEY;
       if (SESSION_DATES.includes(date)) updates.push({ type: "attendance", status: facts.attendance.status, date });
     }
