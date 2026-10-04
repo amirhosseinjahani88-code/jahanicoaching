@@ -402,7 +402,7 @@ const PublicViews = (() => {
     const report = cachedReport && !cachedReport.loading ? cachedReport : AI.parentReport(student);
     const balance = SJ.studentBalance(student.id);
     const sessionsLeft = Math.max(0, student.sessions - student.used);
-    const samples = SJ.biomech(student.id, student.stroke).map((s) => AI.analyzeSample({ distance: s.distance, time: s.time, strokes: s.strokes }));
+    const samples = SJ.biomech(student.id, student.stroke).map((s) => AI.analyzeSample(s));
 
     return UI.publicShell(`
       <div class="parent-portal">

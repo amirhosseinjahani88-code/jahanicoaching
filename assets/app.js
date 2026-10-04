@@ -1024,16 +1024,21 @@ function applyEventUpdates(student, updates) {
   updates.forEach((update) => {
     if (update.type === "record") {
       SJ.applyRecord(student, update);
-      done.push(`رکورد ${update.stroke} ${UI.fa(update.distance)} متر: ${UI.secs(update.time)} ثانیه`);
+      const change = update.time == null
+        ? `${Number(update.delta) < 0 ? "کاهش" : "افزایش"} ${UI.fa(Math.abs(Number(update.delta)))} ثانیه`
+        : `${UI.secs(update.time)} ثانیه`;
+      done.push(`رکورد ${update.stroke} ${UI.fa(update.distance)} متر: ${change}`);
     } else if (update.type === "biomech") {
       SJ.addBiomech(student.id, {
         date: TODAY_KEY,
         distance: update.distance,
         time: update.time,
         strokes: update.strokeCount,
+        rate: update.rate,
         stroke: update.stroke,
       });
-      done.push(`تست بیومکانیک ${update.stroke}`);
+      const detail = update.rate != null ? `ریت ${UI.fa(update.rate)}` : "تست";
+      done.push(`${detail} بیومکانیک ${update.stroke} ${UI.fa(update.distance)} متر`);
     } else if (update.type === "attendance") {
       SJ.markOnDate(student.id, update.status, update.date);
       const label = update.status === "absent" ? "غایب" : update.status === "late" ? "تأخیر" : "حاضر";
@@ -1043,11 +1048,11 @@ function applyEventUpdates(student, updates) {
   return done;
 }
 
-async function readEventExtraction(student, text) {
+async function readEventExtraction(student, text, priorFacts, contextNote) {
   try {
-    return await AIRemote.extractEvent(student, text);
+    return await AIRemote.extractEvent(student, text, priorFacts, contextNote);
   } catch (err) {
-    return AI.extractEvent(student, text);
+    return AI.extractEvent(student, text, priorFacts);
   }
 }
 
@@ -1077,6 +1082,7 @@ APP.action("event:save", async (data) => {
       showToParents,
       analysis: extracted.aiFeedback,
       questions: extracted.clarifyingQuestions,
+      facts: extracted.facts,
       answer: "",
     };
     paintEventExtras(student.id);
@@ -1109,16 +1115,28 @@ APP.action("event:confirm", async (data) => {
     button.disabled = true;
     button.textContent = "در حال تطبیق…";
   }
-  const combined = `${pending.text}\n${answer}`;
-  const extracted = await readEventExtraction(student, combined);
+  const asked = (pending.questions || []).join(" ");
+  const chain = `${pending.text}\nسوال سیستم: ${asked}\nپاسخ مربی: ${answer}`;
+  const extracted = await readEventExtraction(student, answer, pending.facts, chain);
   if (extracted.clarifyingQuestions.length) {
-    APP.ui.eventPending = { ...pending, answer, questions: extracted.clarifyingQuestions, analysis: extracted.aiFeedback };
+    const novel = extracted.clarifyingQuestions.filter((question) => !(pending.questions || []).includes(question));
+    APP.ui.eventPending = {
+      ...pending,
+      answer,
+      questions: novel.length ? novel : pending.questions,
+      facts: extracted.facts,
+      analysis: extracted.aiFeedback,
+    };
     paintEventExtras(student.id);
-    UI.toast("هنوز یک مورد مبهم است. پاسخ را کامل‌تر بنویسید.");
+    if (button) {
+      button.disabled = false;
+      button.textContent = "تایید و اعمال نهایی";
+    }
+    UI.toast(novel.length ? "هنوز یک مورد برای ثبت کم است." : "همین سؤال هنوز جواب مشخصی نگرفته است.");
     return;
   }
   const applied = applyEventUpdates(student, extracted.proposedUpdates);
-  SJ.addStudentNote(student.id, { text: combined, analysis: extracted.aiFeedback || pending.analysis, showToParents: pending.showToParents });
+  SJ.addStudentNote(student.id, { text: chain, analysis: extracted.aiFeedback || pending.analysis, showToParents: pending.showToParents });
   APP.ui.eventPending = null;
   const input = document.getElementById("event-note");
   if (input) input.value = "";

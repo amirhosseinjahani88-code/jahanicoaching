@@ -352,7 +352,7 @@ const CoachViews = (() => {
     const points = AI.finaPoints(student.event, best);
     const rate = SJ.attendanceRate(student.id);
     const samples = SJ.biomech(student.id, student.stroke);
-    const analyzed = samples.map((s) => AI.analyzeSample({ distance: s.distance, time: s.time, strokes: s.strokes }));
+    const analyzed = samples.map((s) => AI.analyzeSample(s));
     if (AIRemote.isEnabled() && !APP.ui.biomechAi[student.id]) {
       APP.ui.biomechAi[student.id] = { loading: true };
       AIRemote.biomechExplain(student).then((verdict) => {
@@ -877,7 +877,7 @@ const CoachViews = (() => {
     const student = SJ.studentById(studentId);
     const stroke = STROKES.includes(APP.ui.biomechStroke) ? APP.ui.biomechStroke : student.stroke;
     const samples = SJ.biomech(studentId, stroke);
-    const analyzed = samples.map((s) => AI.analyzeSample({ distance: s.distance, time: s.time, strokes: s.strokes }));
+    const analyzed = samples.map((s) => AI.analyzeSample(s));
     const cacheKey = `${student.id}:${stroke}`;
     if (AIRemote.isEnabled() && !APP.ui.biomechAi[cacheKey]) {
       APP.ui.biomechAi[cacheKey] = { loading: true };
@@ -957,10 +957,10 @@ const CoachViews = (() => {
                 return `<div class="ledger-row">
                   <span>${UI.escapeHtml(s.date)}</span>
                   <span class="badge badge-blue">${UI.escapeHtml(s.stroke || stroke)}</span>
-                  <span class="num">${UI.fa(s.distance)} متر در ${UI.secs(s.time)} ثانیه</span>
-                  <span class="num">${UI.fa(s.strokes)} دست</span>
-                  <span class="num">ریت ${UI.fa(a.rate)}</span>
-                  <span class="num">DPS ${UI.secs(a.dps, 2)}</span>
+                  <span class="num">${s.time ? `${UI.fa(s.distance)} متر در ${UI.secs(s.time)} ثانیه` : `${UI.fa(s.distance)} متر`}</span>
+                  <span class="num">${s.strokes ? `${UI.fa(s.strokes)} دست` : "بدون شمارش دست"}</span>
+                  <span class="num">ریت ${a.rate == null ? "—" : UI.fa(a.rate)}</span>
+                  <span class="num">DPS ${a.dps == null ? "—" : UI.secs(a.dps, 2)}</span>
                 </div>`;
               })
               .join("") || '<p class="muted">تستی ثبت نشده است.</p>'}

@@ -286,6 +286,11 @@ const AI = (() => {
 
   function eventDigits(text) {
     return String(text || "")
+      .replace(/\u200c/g, " ")
+      .replace(/[ي]/g, "ی")
+      .replace(/[ك]/g, "ک")
+      .replace(/کرال\s*سینه/g, "کرال سینه")
+      .replace(/کرال\s*پشت/g, "کرال پشت")
       .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
       .replace(/(\d)[٫](\d)/g, "$1.$2");
   }
@@ -294,8 +299,8 @@ const AI = (() => {
     const found = [];
     if (/پروانه/.test(text)) found.push("پروانه");
     if (/قورباغه/.test(text)) found.push("قورباغه");
-    if (/کرال پشت|(?<!کرال )پشت/.test(text)) found.push("کرال پشت");
-    if (/کرال سینه|آزاد|(?<!کرال )سینه/.test(text)) found.push("کرال سینه");
+    if (/کرال پشت|(?:^|[^ل])پشت/.test(text)) found.push("کرال پشت");
+    if (/کرال سینه|آزاد|(?:^|[^ل])سینه/.test(text)) found.push("کرال سینه");
     return found;
   }
 
@@ -306,7 +311,7 @@ const AI = (() => {
 
   function mentionedExactTime(text) {
     const digits = eventDigits(text);
-    if (/ثانیه\s*(کم|زیاد|بهتر|بدتر)|کم شد|زیاد شد/.test(digits) && !/زمان/.test(digits)) return null;
+    if (/ثانیه\s*(کم|زیاد|بهتر|بدتر|کاهش|افزایش)|کم شد|زیاد شد|(?:کاهش|افزایش|کم|زیاد|بهتر|بدتر)(?:ی)?\s*\d/.test(digits) && !/زمان/.test(digits)) return null;
     const match = digits.match(/زمان(?:ش)?\s*(?:شد|به|:|＝|=)?\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*ثانیه/);
     if (!match) return null;
     const raw = match[1] || match[2] || "";
@@ -316,12 +321,83 @@ const AI = (() => {
 
   function mentionedDelta(text) {
     const digits = eventDigits(text);
-    const match = digits.match(/(\d+(?:\.\d+)?)\s*ثانیه\s*(کم|زیاد|بهتر|بدتر)/);
-    if (!match && !/کم شد|زیاد شد/.test(digits)) return null;
-      const amount = match ? Number(match[1]) : null;
+    let amount = null;
+    let word = "";
+    const after = digits.match(/(\d+(?:\.\d+)?)\s*ثانیه\s*(کاهش|افزایش|کم|زیاد|بهتر|بدتر)/);
+    const before = digits.match(/(کاهش|افزایش|کم|زیاد|بهتر|بدتر)(?:ی)?\s*(\d+(?:\.\d+)?)\s*ثانیه/);
+    if (after) {
+      amount = Number(after[1]);
+      word = after[2];
+    } else if (before) {
+      amount = Number(before[2]);
+      word = before[1];
+    } else if (/کم شد|زیاد شد/.test(digits)) {
+      const loose = digits.match(/(\d+(?:\.\d+)?)\s*ثانیه/);
+      amount = loose ? Number(loose[1]) : null;
+      word = /کم/.test(digits) ? "کم" : "زیاد";
+    }
     if (!Number.isFinite(amount)) return null;
-    const word = match ? match[2] : /کم/.test(digits) ? "کم" : "زیاد";
-    return /کم|بهتر/.test(word) ? -amount : amount;
+    return /کم|کاهش|بهتر/.test(word) ? -amount : amount;
+  }
+
+  function mentionedRate(text) {
+    const digits = eventDigits(text);
+    if (!/ریت/.test(digits)) return null;
+    const direct = digits.match(/ریت\s*(\d+(?:\.\d+)?)/);
+    if (direct) return Number(direct[1]);
+    const became = digits.match(/ریت[\s\S]{0,48}?(?:شده|شد)\s*(\d+(?:\.\d+)?)/);
+    return became ? Number(became[1]) : null;
+  }
+
+  function blankFacts() {
+    return {
+      record: false,
+      biomech: false,
+      attendance: false,
+      stroke: null,
+      distance: null,
+      exactTime: null,
+      delta: null,
+      strokeCount: null,
+      rate: null,
+      attendanceStatus: null,
+      sessionDate: null,
+      saysToday: false,
+      saysOther: false,
+    };
+  }
+
+  function parseFacts(text) {
+    const note = eventDigits(text);
+    const facts = blankFacts();
+    const strokes = mentionedStrokes(note);
+    facts.stroke = strokes.length === 1 ? strokes[0] : null;
+    facts.distance = mentionedDistance(note);
+    facts.exactTime = mentionedExactTime(note);
+    facts.delta = mentionedDelta(note);
+    const strokeCount = note.match(/(\d+)\s*دست/);
+    facts.strokeCount = strokeCount ? Number(strokeCount[1]) : null;
+    facts.rate = mentionedRate(note);
+    facts.record = facts.delta != null || /رکورد|زمانش|زمان شد|ثانیه\s*(?:کم|زیاد|کاهش|افزایش)|کم شد|زیاد شد/.test(note);
+    facts.biomech = /ریت|دست\s*کشی|بیومکانیک|پیشروی/.test(note);
+    if (/غایب|نیامد/.test(note)) facts.attendanceStatus = "absent";
+    else if (/تأخیر|تاخیر|دیر آمد|با تأخیر/.test(note)) facts.attendanceStatus = "late";
+    else if (/حاضر/.test(note)) facts.attendanceStatus = "present";
+    facts.attendance = !!facts.attendanceStatus;
+    facts.sessionDate = mentionedSessionDate(note);
+    facts.saysToday = /امروز/.test(note);
+    facts.saysOther = /دیروز|جلسه قبلی|جلسه قبل/.test(note) || !!note.match(/14\d{2}\/\d{2}\/\d{2}/);
+    return facts;
+  }
+
+  function mergeFacts(prior, next) {
+    const facts = { ...(prior || blankFacts()) };
+    Object.keys(next).forEach((key) => {
+      const value = next[key];
+      if (value === true) facts[key] = true;
+      else if (value != null && value !== false) facts[key] = value;
+    });
+    return facts;
   }
 
   function mentionedSessionDate(text) {
@@ -336,71 +412,63 @@ const AI = (() => {
     return null;
   }
 
-  function extractEvent(student, text) {
+  function extractEvent(student, text, priorFacts) {
     const note = String(text || "").trim();
+    const facts = mergeFacts(priorFacts, parseFacts(note));
     const questions = [];
     const updates = [];
-    const strokes = mentionedStrokes(note);
-    const stroke = strokes.length === 1 ? strokes[0] : null;
-    const distance = mentionedDistance(note);
-    const exactTime = mentionedExactTime(note);
-    const delta = mentionedDelta(note);
 
-    const recordIntent = /رکورد|زمانش|زمان شد|ثانیه کم|ثانیه زیاد|کم شد|زیاد شد/.test(note);
-    if (recordIntent) {
+    if (facts.record) {
       const missing = [];
-      if (!stroke) missing.push("نوع شنا (سینه، پشت، قورباغه یا پروانه)");
-      if (!distance) missing.push("مسافت (۲۵، ۵۰، ۱۰۰ یا ۲۰۰ متر)");
-      if (exactTime == null && delta == null) missing.push("زمان دقیق یا میزان تغییر بر حسب ثانیه");
-      if (strokes.length > 1) missing.push("فقط یک شنا");
+      if (!facts.stroke) missing.push("شنا");
+      if (!facts.distance) missing.push("مسافت");
+      if (facts.exactTime == null && facts.delta == null) missing.push("زمان یا میزان تغییر");
       if (missing.length) {
-        questions.push(`آقای مربی، این تغییر رکورد مربوط به کدام شنا (سینه، پشت، قورباغه، پروانه) و چه مسافتی (۲۵، ۵۰، ۱۰۰ یا ۲۰۰ متر) است؟ ${missing.join("، ")} در متن نیامده و حدس زده نمی‌شود.`);
-      } else if (exactTime == null && delta != null && SJ.latestRecordTime(student, stroke, distance) == null) {
-        questions.push(`برای ${stroke} ${UI.fa(distance)} متر رکورد قبلی ثبت نشده. زمان دقیق جدید را بنویسید.`);
+        questions.push(`آقای مربی، این تغییر رکورد هنوز ${missing.join(" و ")} ندارد. شنا را سینه، پشت، قورباغه یا پروانه و مسافت را ۲۵، ۵۰، ۱۰۰ یا ۲۰۰ متر بنویسید.`);
       } else {
-        const time = exactTime != null ? exactTime : Number((SJ.latestRecordTime(student, stroke, distance) + delta).toFixed(2));
-        if (time > 0) updates.push({ type: "record", stroke, distance, time, delta: delta == null ? null : delta });
+        const baseline = facts.exactTime == null ? SJ.latestRecordTime(student, facts.stroke, facts.distance) : null;
+        const time = facts.exactTime != null ? facts.exactTime : baseline == null ? null : Number((baseline + facts.delta).toFixed(2));
+        updates.push({ type: "record", stroke: facts.stroke, distance: facts.distance, time, delta: facts.delta });
       }
     }
 
-    const biomechIntent = /ریت|دست‌?کشی|بیومکانیک|پیشروی/.test(note);
-    if (biomechIntent) {
-      const digits = eventDigits(note);
-      const strokeCountMatch = digits.match(/(\d+)\s*دست/);
-      const rateMatch = digits.match(/ریت\s*(\d+(?:\.\d+)?)/);
-      const strokeCount = strokeCountMatch ? Number(strokeCountMatch[1]) : null;
-      const rate = rateMatch ? Number(rateMatch[1].replace("/", ".")) : null;
+    if (facts.biomech) {
+      const hasMeasure = facts.rate != null || (facts.exactTime != null && facts.strokeCount != null);
       const missing = [];
-      if (!stroke) missing.push("نوع شنا");
-      if (!distance) missing.push("مسافت");
-      if (exactTime == null && strokeCount == null && rate == null) missing.push("زمان، تعداد دست یا ریت");
+      if (!facts.stroke) missing.push("شنا");
+      if (!facts.distance) missing.push("مسافت");
+      if (!hasMeasure) missing.push("مقدار ریت یا زمان و تعداد دست");
       if (missing.length) {
-        questions.push(`برای ثبت بیومکانیک، ${missing.join(" و ")} در متن مشخص نیست. نوع شنا و مسافت را هم بنویسید.`);
-      } else if (exactTime != null && (strokeCount != null || rate != null)) {
-        const count = strokeCount != null ? strokeCount : Math.max(1, Math.round((rate * exactTime) / 60));
-        updates.push({ type: "biomech", stroke, distance, time: exactTime, strokeCount: count, rate });
+        questions.push(`برای ثبت ریت یا بیومکانیک هنوز ${missing.join(" و ")} مشخص نیست.`);
+      } else if (facts.rate != null && facts.stroke && facts.distance) {
+        updates.push({
+          type: "biomech",
+          stroke: facts.stroke,
+          distance: facts.distance,
+          time: facts.exactTime,
+          strokeCount: facts.strokeCount,
+          rate: facts.rate,
+        });
       } else {
-        questions.push("برای تست بیومکانیک زمان و تعداد دست، یا زمان و ریت عددی، هر دو لازم است.");
+        const count = facts.strokeCount != null ? facts.strokeCount : Math.max(1, Math.round((facts.rate * facts.exactTime) / 60));
+        updates.push({
+          type: "biomech",
+          stroke: facts.stroke,
+          distance: facts.distance,
+          time: facts.exactTime,
+          strokeCount: count,
+          rate: facts.rate,
+        });
       }
     }
 
-    const attendanceIntent = /غایب|نیامد|حاضر|تأخیر|تاخیر|دیر آمد|با تأخیر/.test(note);
-    if (attendanceIntent) {
-      let status = null;
-      if (/غایب|نیامد/.test(note)) status = "absent";
-      else if (/تأخیر|تاخیر|دیر/.test(note)) status = "late";
-      else if (/حاضر/.test(note)) status = "present";
-      const dated = mentionedSessionDate(note);
-      const saysToday = /امروز/.test(note);
-      const saysOther = /دیروز|جلسه قبلی|جلسه قبل/.test(note) || !!eventDigits(note).match(/14\d{2}\/\d{2}\/\d{2}/);
-      if (!status) {
-        questions.push("وضعیت حضور را واضح بنویسید: حاضر، تأخیر یا غایب.");
-      } else if (saysToday && saysOther) {
+    if (facts.attendance) {
+      if (facts.saysToday && facts.saysOther) {
         questions.push("این غیبت مربوط به جلسه امروز است یا جلسه تاریخ مشخصی؟");
-      } else if (saysOther && !dated) {
+      } else if (facts.saysOther && !facts.sessionDate) {
         questions.push("این غیبت مربوط به جلسه امروز است یا جلسه تاریخ مشخصی؟");
       } else {
-        updates.push({ type: "attendance", status, date: dated || TODAY_KEY });
+        updates.push({ type: "attendance", status: facts.attendanceStatus, date: facts.sessionDate || TODAY_KEY });
       }
     }
 
@@ -408,6 +476,7 @@ const AI = (() => {
       aiFeedback: eventAdvice(student, note),
       proposedUpdates: questions.length ? [] : updates,
       clarifyingQuestions: questions,
+      facts,
     };
   }
 
@@ -428,7 +497,19 @@ const AI = (() => {
     return lines.join("\n");
   }
 
-  function analyzeSample({ distance, time, strokes }) {
+  function analyzeSample(sample) {
+    const distance = Number(sample && sample.distance);
+    const time = Number(sample && sample.time);
+    const strokes = Number(sample && (sample.strokes != null ? sample.strokes : sample.strokeCount));
+    const givenRate = sample && sample.rate != null ? Number(sample.rate) : null;
+    if (!(time > 0) || !(strokes > 0)) {
+      return {
+        velocity: null,
+        dps: null,
+        rate: Number.isFinite(givenRate) ? Math.round(givenRate) : null,
+        index: null,
+      };
+    }
     const velocity = distance / time;
     const dps = distance / strokes;
     const rate = (strokes / time) * 60;
@@ -454,10 +535,13 @@ const AI = (() => {
     const idealRate = BASE_RATE[stroke] || 38;
     const notes = [];
 
-    const dpsDelta = last.dps - first.dps;
-    const rateDelta = last.rate - first.rate;
+    const hasDps = first.dps != null && last.dps != null;
+    const dpsDelta = hasDps ? last.dps - first.dps : 0;
+    const rateDelta = (last.rate || 0) - (first.rate || 0);
 
-    if (dpsDelta > 0.05) {
+    if (!hasDps) {
+      notes.push("این تست فقط ریت دارد و پیشروی هر دست از آن محاسبه نشده است.");
+    } else if (dpsDelta > 0.05) {
       notes.push(`پیشروی با هر دست ${UI.faDecimal(dpsDelta.toFixed(2))} متر بهتر شده؛ یعنی گرفتن آب مؤثرتر شده است.`);
     } else if (dpsDelta < -0.05) {
       notes.push("پیشروی با هر دست کم شده است؛ احتمالاً دست پیش از کامل شدن کشش رها می‌شود.");
@@ -465,7 +549,9 @@ const AI = (() => {
       notes.push("پیشروی با هر دست تقریباً ثابت مانده است.");
     }
 
-    if (last.rate > idealRate + 6) {
+    if (last.rate == null) {
+      notes.push("ریت این تست جداگانه ثبت نشده است.");
+    } else if (last.rate > idealRate + 6) {
       notes.push(`ریت ${UI.fa(last.rate)} بالاتر از بازه مطلوب ${UI.fa(idealRate)} است؛ طول دست‌کشی فدای تعداد شده.`);
     } else if (last.rate < idealRate - 6) {
       notes.push(`ریت ${UI.fa(last.rate)} پایین‌تر از بازه مطلوب است؛ ست‌های ریت‌بالا با فین کوتاه اضافه شود.`);
@@ -473,11 +559,11 @@ const AI = (() => {
       notes.push(`ریت ${UI.fa(last.rate)} داخل بازه مطلوب این شنا است.`);
     }
 
-    if (rateDelta > 3 && dpsDelta <= 0) {
+    if (hasDps && rateDelta > 3 && dpsDelta <= 0) {
       notes.push("الگوی «ریت بالا، بازده پایین» دیده می‌شود؛ دو هفته روی ست‌های شمارش دست کار شود.");
     }
 
-    const improvement = ((last.velocity - first.velocity) / first.velocity) * 100;
+    const improvement = first.velocity && last.velocity ? ((last.velocity - first.velocity) / first.velocity) * 100 : 0;
     return {
       headline:
         improvement > 1

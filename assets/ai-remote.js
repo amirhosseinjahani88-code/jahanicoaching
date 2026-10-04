@@ -250,7 +250,7 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
     const fallback = () => ({ ...AI.biomechVerdict(samples, chosen), engine: "offline" });
     if (!isEnabled()) return fallback();
     const local = fallback();
-    const analyzed = samples.map((s) => AI.analyzeSample({ distance: s.distance, time: s.time, strokes: s.strokes }));
+    const analyzed = samples.map((s) => AI.analyzeSample(s));
     try {
       const { json } = await complete({
         system: `تو آنالیزور بیومکانیک شنا هستی. اعداد از قبل حساب شده‌اند؛ آن‌ها را عوض نکن. فقط JSON: {"headline":"...","notes":["...","..."]}. ۲ تا ۴ نکته اجرایی درباره همین شنا.`,
@@ -262,39 +262,24 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
     }
   }
 
-  async function extractEvent(student, text) {
-    const local = AI.extractEvent(student, text);
+  async function extractEvent(student, text, priorFacts, contextNote) {
+    const local = AI.extractEvent(student, text, priorFacts);
     if (!isEnabled()) return { ...local, engine: "offline" };
     try {
       const { json } = await complete({
-        system: `تو استخراج‌کننده داده از یادداشت مربی شنا هستی. حدس نزن و از رشته یا ماده پیش‌فرض شناگر استفاده نکن. فقط چیزی را پر کن که در متن آمده. فقط JSON:
-{"aiFeedback":["...","...","..."],"proposedUpdates":[{"type":"record|biomech|attendance","stroke":"کرال سینه|کرال پشت|قورباغه|پروانه|null","distance":50,"time":45,"delta":null,"strokeCount":null,"rate":null,"status":"present|late|absent|null","date":null}],"clarifyingQuestions":["..."]}
-رکورد فقط با شنا، مسافت ۲۵/۵۰/۱۰۰/۲۰۰ و زمان دقیق یا میزان تغییر ثانیه. اگر یکی نبود proposedUpdates رکورد نده و سوال بپرس.
-بیومکانیک: شنا و مسافت لازم است، به‌علاوه زمان و تعداد دست یا ریت. اگر شنا یا مسافت نبود سوال بپرس.
-حضور: اگر تاریخ نبود امروز است. دیروز یا جلسه قبلی یا تاریخ شمسی را تشخیص بده. اگر مبهم بود بپرس این غیبت مربوط به جلسه امروز است یا جلسه تاریخ مشخصی؟
-aiFeedback دقیقاً ۳ خط فنی، روانشناسی و اقدام جلسه بعد.`,
+        system: `تو مربی شنا هستی. فقط JSON با سه خط بازخورد: {"aiFeedback":["...","...","..."]}. خط اول فنی، خط دوم روانشناسی، خط سوم اقدام جلسه بعد. داده جدید استخراج نکن و سوال تازه‌ای نساز.`,
         user: JSON.stringify({
-          note: String(text || "").slice(0, 800),
+          note: String(contextNote || text || "").slice(0, 800),
+          reply: String(text || "").slice(0, 400),
           name: student.name,
-          today: TODAY_KEY,
-          sessions: SESSION_DATES,
         }),
       });
       const feedback = Array.isArray(json?.aiFeedback)
         ? json.aiFeedback.map((line) => String(line).trim()).filter(Boolean).slice(0, 3)
         : [];
-      const gated = AI.extractEvent(student, text);
-      const questions = gated.clarifyingQuestions.slice();
-      if (questions.length) {
-        (Array.isArray(json?.clarifyingQuestions) ? json.clarifyingQuestions : []).forEach((item) => {
-          const line = String(item || "").trim();
-          if (line && !questions.includes(line)) questions.unshift(line);
-        });
-      }
       return {
-        aiFeedback: feedback.length === 3 ? feedback.join("\n") : gated.aiFeedback,
-        proposedUpdates: questions.length ? [] : gated.proposedUpdates,
-        clarifyingQuestions: questions,
+        ...local,
+        aiFeedback: feedback.length === 3 ? feedback.join("\n") : local.aiFeedback,
         engine: "ai",
       };
     } catch (err) {

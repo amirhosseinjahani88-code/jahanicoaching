@@ -374,12 +374,19 @@ const SJ = (() => {
     return "کرال سینه";
   }
 
-  function applyRecord(student, { stroke, distance, time }) {
+  function applyRecord(student, { stroke, distance, time, delta }) {
     if (!state.records) state.records = {};
     if (!Array.isArray(state.records[student.id])) state.records[student.id] = [];
-    const entry = { stroke, distance: Number(distance), time: Number(time), date: TODAY_KEY };
+    const numeric = time == null || time === "" ? null : Number(time);
+    const entry = {
+      stroke,
+      distance: Number(distance),
+      time: Number.isFinite(numeric) ? numeric : null,
+      delta: delta == null || delta === "" ? null : Number(delta),
+      date: TODAY_KEY,
+    };
     state.records[student.id].push(entry);
-    if (entry.distance === 50 && stroke === mainStroke(student)) {
+    if (entry.time != null && entry.distance === 50 && stroke === mainStroke(student)) {
       student.times.push(Number(entry.time.toFixed(2)));
       rememberTimes(student);
     }
@@ -574,8 +581,9 @@ const SJ = (() => {
     bag[stroke].push({
       date: sample.date || TODAY_KEY,
       distance: sample.distance,
-      time: sample.time,
-      strokes: sample.strokes,
+      time: sample.time == null || sample.time === "" ? null : Number(sample.time),
+      strokes: sample.strokes == null || sample.strokes === "" ? null : Number(sample.strokes),
+      rate: sample.rate == null || sample.rate === "" ? null : Number(sample.rate),
       stroke,
     });
     state.biomech[studentId] = bag;
