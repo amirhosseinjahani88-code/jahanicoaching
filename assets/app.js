@@ -111,11 +111,18 @@ const APP = (() => {
     return PublicViews.landing();
   }
 
+  let renderedHash = null;
+
   function render() {
     const root = document.getElementById("app");
+    const hash = window.location.hash || "";
+    const keepScroll = hash === renderedHash;
+    const scrollY = window.scrollY;
     UI.closeModal();
     root.innerHTML = route();
-    window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+    renderedHash = hash;
+    if (keepScroll) window.scrollTo(0, scrollY);
+    else window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
     const currentNav = root.querySelector(".panel-nav [aria-current='page']");
     if (currentNav && currentNav.offsetParent) {
       currentNav.scrollIntoView({ inline: "nearest", block: "nearest" });

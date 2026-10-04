@@ -431,9 +431,14 @@ const CoachViews = (() => {
     const analyzed = samples.map((s) => AI.analyzeSample(s));
     if (AIRemote.isEnabled() && !APP.ui.biomechAi[student.id]) {
       APP.ui.biomechAi[student.id] = { loading: true };
+      const studentId = student.id;
       AIRemote.biomechExplain(student).then((verdict) => {
-        APP.ui.biomechAi[student.id] = verdict;
-        APP.render();
+        if (!APP.ui.biomechAi[studentId] || APP.ui.biomechAi[studentId].loading) {
+          APP.ui.biomechAi[studentId] = verdict;
+        }
+        const box = document.getElementById("student-bio-note");
+        if ((window.location.hash || "") !== `#/app/student/${studentId}` || !box) return;
+        box.innerHTML = `<strong>${UI.escapeHtml(verdict.headline)}</strong><ul>${(verdict.notes || []).map((note) => `<li>${UI.escapeHtml(note)}</li>`).join("")}</ul>`;
       });
     }
     const cachedBio = APP.ui.biomechAi[student.id];
@@ -465,7 +470,7 @@ const CoachViews = (() => {
                           ${UI.kpi("DPS", UI.secs(analyzed[analyzed.length - 1].dps, 2), "متر در هر دست")}
                           ${UI.kpi("سرعت", UI.secs(analyzed[analyzed.length - 1].velocity, 2), "متر بر ثانیه")}
                         </div>
-                        <div class="ai-box">
+                        <div class="ai-box" id="student-bio-note">
                           <strong>${UI.escapeHtml(verdict.headline)}</strong>
                           <ul>${verdict.notes.map((n) => `<li>${UI.escapeHtml(n)}</li>`).join("")}</ul>
                         </div>`
@@ -959,7 +964,11 @@ const CoachViews = (() => {
           APP.ui.biomechAi[cacheKey] = verdict;
         }
         if (APP.ui.biomechPanel && APP.ui.biomechPanel.status) return;
-        if ((window.location.hash || "") === "#/app/biomech") APP.render();
+        if ((window.location.hash || "") === "#/app/biomech") {
+          const box = document.getElementById("bio-analysis");
+          if (box) box.innerHTML = bioAnalysisHtml(verdict);
+          else APP.render();
+        }
       });
     }
     const cachedBio = APP.ui.biomechAi[cacheKey];
