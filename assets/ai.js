@@ -374,7 +374,7 @@ const AI = (() => {
 
   function splitClauses(text) {
     return eventDigits(text)
-      .split(/[،,؛;\n]+|\s+و\s+(?=رکورد|تعداد|ریت|غایب|حاضر|تأخیر|تاخیر|جلسه|زمان)/)
+      .split(/[،,؛;\n]+|\s+و\s+(?=رکورد|تعداد|ریت|غایب|حاضر|تأخیر|تاخیر|جلسه|زمان)|(?=رکورد|تعداد\s*دست|دست\s*کشی|ریت|جلسه\s)/)
       .map((part) => part.trim())
       .filter(Boolean);
   }
@@ -382,7 +382,7 @@ const AI = (() => {
   function clauseKind(clause) {
     if (/غایب|نیامد|حاضر|تأخیر|تاخیر|دیر آمد/.test(clause)) return "attendance";
     if (/ریت|دست\s*کشی|بیومکانیک|پیشروی|تعداد\s*دست|\d+\s*دست|دست/.test(clause)) return "biomech";
-    if (/رکورد|زمان|ثانیه|کاهش|افزایش|کم شد|زیاد شد/.test(clause)) return "record";
+    if (/رکورد|زمان|ثانیه|کاهش|افزایش|کم شد|زیاد شد|بهتر شد|بدتر شد|افت کرد|خوب بود|عالی شد|رکورد زد/.test(clause)) return "record";
     return "loose";
   }
 
@@ -636,31 +636,40 @@ const AI = (() => {
 
   function recordQuestion(branch) {
     if (!branch.active) return null;
-    if (!branch.stroke && !branch.distance && (branch.delta != null || branch.exactTime != null)) {
+    const hasNumber = branch.delta != null || branch.exactTime != null;
+    if (!hasNumber && branch.stroke && branch.distance) {
+      return `رکورد ${UI.fa(branch.distance)} متر ${branch.stroke} چه تغییری کرد؟ (مثلاً چند ثانیه کاهش یا زمان دقیق جدید چقدر شد؟)`;
+    }
+    if (!hasNumber) return "این رکورد چه تغییری کرد؟ (مثلاً چند ثانیه کاهش یا زمان دقیق جدید چقدر شد؟)";
+    if (!branch.stroke && !branch.distance) {
       const amount = branch.delta != null ? Math.abs(branch.delta) : branch.exactTime;
       return `مسافت و نوع شنای رکورد ${UI.fa(amount)} ثانیه چیست؟`;
     }
     const missing = [];
     if (!branch.stroke) missing.push("نوع شنا");
     if (!branch.distance) missing.push("مسافت");
-    if (branch.exactTime == null && branch.delta == null) missing.push("زمان یا میزان تغییر");
     if (!missing.length) return null;
     return `برای ثبت رکورد هنوز ${missing.join(" و ")} مشخص نیست.`;
   }
 
+  function biomechSpan(branch) {
+    return branch.distance != null || branch.exactTime != null;
+  }
+
   function biomechQuestion(branch) {
     if (!branch.active) return null;
-    if (branch.stroke && branch.strokeCount != null && !branch.distance) {
-      return `تعداد دست ${UI.fa(branch.strokeCount)} در ${branch.stroke} مربوط به چه مسافتی (۲۵، ۵۰، ۱۰۰ یا ۲۰۰ متر) است؟`;
+    const strokeName = branch.stroke === "کرال سینه" ? "شنای آزاد" : branch.stroke;
+    if (branch.stroke && branch.strokeCount != null && !biomechSpan(branch)) {
+      return `${UI.fa(branch.strokeCount)} دست‌کشی در ${strokeName} در چه مسافتی (۲۵/۵۰/۱۰۰ متر) یا چه زمانی ثبت شده است؟`;
     }
-    if (branch.stroke && branch.rate != null && !branch.distance) {
-      return `ریت ${UI.fa(branch.rate)} در ${branch.stroke} مربوط به چه مسافتی (۲۵، ۵۰، ۱۰۰ یا ۲۰۰ متر) است؟`;
+    if (branch.stroke && branch.rate != null && !biomechSpan(branch)) {
+      return `ریت ${UI.fa(branch.rate)} در ${strokeName} در چه مسافتی (۲۵/۵۰/۱۰۰ متر) یا چه زمانی ثبت شده است؟`;
     }
-    const measured = branch.rate != null || branch.strokeCount != null;
+    if (branch.stroke && biomechSpan(branch) && (branch.strokeCount != null || branch.rate != null)) return null;
     const missing = [];
     if (!branch.stroke) missing.push("شنا");
-    if (!branch.distance) missing.push("مسافت");
-    if (!measured) missing.push("تعداد دست یا ریت");
+    if (!biomechSpan(branch)) missing.push("مسافت یا زمان");
+    if (branch.strokeCount == null && branch.rate == null) missing.push("تعداد دست");
     if (!missing.length) return null;
     return `برای ثبت بیومکانیک هنوز ${missing.join(" و ")} مشخص نیست.`;
   }
@@ -708,9 +717,8 @@ const AI = (() => {
       if (SESSION_DATES.includes(date)) updates.push({ type: "attendance", status: facts.attendance.status, date });
     }
 
-    const source = priorFacts && priorFacts.record ? "" : note;
     return {
-      aiFeedback: eventAdvice(student, source),
+      aiFeedback: questions.length || (priorFacts && priorFacts.record) ? "" : eventAdvice(student, note),
       proposedUpdates: questions.length ? [] : updates,
       clarifyingQuestions: questions,
       facts,

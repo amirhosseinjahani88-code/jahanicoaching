@@ -1068,7 +1068,7 @@ APP.action("event:save", async (data) => {
   const button = document.getElementById("event-save");
   if (button) {
     button.disabled = true;
-    button.textContent = "در حال تحلیل…";
+    button.textContent = "در حال بررسی…";
   }
   const extracted = await readEventExtraction(student, text);
   if (button) {
@@ -1080,7 +1080,7 @@ APP.action("event:save", async (data) => {
       studentId: student.id,
       text,
       showToParents,
-      analysis: extracted.aiFeedback,
+      analysis: "",
       questions: extracted.clarifyingQuestions,
       facts: extracted.facts,
       answer: "",
@@ -1132,7 +1132,8 @@ APP.action("event:confirm", async (data) => {
     return;
   }
   const applied = applyEventUpdates(student, extracted.proposedUpdates);
-  SJ.addStudentNote(student.id, { text: pending.text, analysis: pending.analysis, showToParents: pending.showToParents });
+  const analysis = extracted.aiFeedback || AI.eventAdvice(student, pending.text);
+  SJ.addStudentNote(student.id, { text: pending.text, analysis, showToParents: pending.showToParents });
   APP.ui.eventPending = null;
   const input = document.getElementById("event-note");
   if (input) input.value = "";

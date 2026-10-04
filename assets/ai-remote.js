@@ -264,6 +264,7 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
 
   async function extractEvent(student, text, priorFacts, contextNote) {
     const local = AI.extractEvent(student, text, priorFacts);
+    if (local.clarifyingQuestions.length) return { ...local, aiFeedback: "", engine: "gated" };
     if (!isEnabled()) return { ...local, engine: "offline" };
     try {
       const { json } = await complete({
