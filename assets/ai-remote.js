@@ -262,27 +262,111 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
     }
   }
 
-  async function extractEvent(student, text, priorFacts, contextNote) {
-    const local = AI.extractEvent(student, text, priorFacts);
-    if (local.clarifyingQuestions.length) return { ...local, aiFeedback: "", engine: "gated" };
+  function eventNumber(value) {
+    if (value == null || value === "") return null;
+    const normalized = String(value).replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)));
+    const number = Number(normalized);
+    return Number.isFinite(number) ? number : null;
+  }
+
+  function eventStroke(value) {
+    const text = String(value || "").replace(/\u200c/g, " ");
+    if (/پشت/.test(text)) return "کرال پشت";
+    if (/قورباغه/.test(text)) return "قورباغه";
+    if (/پروانه/.test(text)) return "پروانه";
+    if (/سینه|آزاد/.test(text)) return "کرال سینه";
+    return "";
+  }
+
+  function eventStatus(value) {
+    const text = String(value || "");
+    if (text === "absent" || /غایب|نیامد/.test(text)) return "absent";
+    if (text === "late" || /تاخیر در ورود|تأخیر در ورود|دیر آمد/.test(text)) return "late";
+    if (text === "present" || /حاضر/.test(text)) return "present";
+    return "";
+  }
+
+  function eventSessionDate(value) {
+    const digits = String(value || "").replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)));
+    const match = digits.match(/(14\d{2})[/-](\d{1,2})[/-](\d{1,2})/);
+    if (!match) return TODAY_KEY;
+    const key = `${match[1]}/${match[2].padStart(2, "0")}/${match[3].padStart(2, "0")}`.replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[digit]);
+    return SESSION_DATES.includes(key) ? key : "";
+  }
+
+  function modelEventDecision(json) {
+    if (!json || typeof json !== "object") return null;
+    const questions = (Array.isArray(json.clarifyingQuestions) ? json.clarifyingQuestions : [])
+      .map((item) => String(item || "").trim())
+      .filter(Boolean)
+      .slice(0, 6);
+    if (questions.length) {
+      return { aiFeedback: "", proposedUpdates: [], clarifyingQuestions: questions };
+    }
+    const lines = (Array.isArray(json.aiFeedback) ? json.aiFeedback : [])
+      .map((item) => String(item || "").trim())
+      .filter((item) => item && !/سوال سیستم|پاسخ مربی/.test(item))
+      .slice(0, 3);
+    const updates = [];
+    (Array.isArray(json.proposedUpdates) ? json.proposedUpdates : []).forEach((row) => {
+      if (!row || typeof row !== "object") return;
+      const type = String(row.type || "");
+      if (type === "record") {
+        const stroke = eventStroke(row.stroke);
+        const distance = eventNumber(row.distance);
+        const time = eventNumber(row.time);
+        const delta = eventNumber(row.delta);
+        if (!stroke || ![25, 50, 100, 200].includes(distance) || (time == null && delta == null)) return;
+        updates.push({ type, stroke, distance, time, delta });
+      } else if (type === "biomech") {
+        const stroke = eventStroke(row.stroke);
+        const distance = eventNumber(row.distance);
+        const time = eventNumber(row.time);
+        const strokeCount = eventNumber(row.strokeCount);
+        const rate = eventNumber(row.rate);
+        const countReady = stroke && strokeCount != null && [25, 50, 100, 200].includes(distance) && time != null;
+        const rateReady = stroke && rate != null && ([25, 50, 100, 200].includes(distance) || time != null);
+        if (!countReady && !rateReady) return;
+        updates.push({ type, stroke, distance, time, strokeCount, rate });
+      } else if (type === "attendance") {
+        const status = eventStatus(row.status);
+        const date = eventSessionDate(row.date);
+        if (!status || !date) return;
+        updates.push({ type, status, date });
+      }
+    });
+    return {
+      aiFeedback: lines.length === 3 ? lines.join("\n") : "",
+      proposedUpdates: updates,
+      clarifyingQuestions: [],
+    };
+  }
+
+  async function extractEvent(student, text, priorFacts, contextNote, dialogue) {
+    const local = AI.extractEvent(student, text, priorFacts && priorFacts.record ? priorFacts : undefined);
     if (!isEnabled()) return { ...local, engine: "offline" };
     try {
       const { json } = await complete({
-        system: `تو مربی شنا هستی. فقط JSON با سه خط بازخورد: {"aiFeedback":["...","...","..."]}. خط اول فنی، خط دوم روانشناسی، خط سوم اقدام جلسه بعد. داده جدید استخراج نکن و سوال تازه‌ای نساز. عبارات «سوال سیستم» و «پاسخ مربی» را در متن نیاور.`,
+        system: `تو مسئول اعتبارسنجی یادداشت مربی شنا هستی. حدس نزن و رکورد یا تست اضافه نساز. فقط JSON:
+{"aiFeedback":["...","...","..."],"proposedUpdates":[{"type":"record|biomech|attendance","stroke":"کرال سینه|کرال پشت|قورباغه|پروانه|null","distance":null,"time":null,"delta":null,"strokeCount":null,"rate":null,"status":"present|late|absent|null","date":null}],"clarifyingQuestions":["..."]}
+اگر حتی یک بخش ناقص است، clarifyingQuestions را پر کن، proposedUpdates را خالی بگذار و aiFeedback را خالی بگذار. تحلیل ننویس.
+رکورد بدون عدد قبول نیست. «سریع‌تر شد، بهتر شد، افت کرد، کم شد، زیاد شد، رکورد زد، عالی بود» فقط وقتی معتبرند که همان جمله ثانیه یا زمان دقیق داشته باشد. وگرنه بپرس: میزان تغییر یا زمان جدید دقیق چقدر بود؟
+تعداد دست فقط با شنا، مسافت ۲۵/۵۰/۱۰۰/۲۰۰ و زمان، هر سه با هم، ثبت می‌شود. اگر مسافت یا زمان نبود بپرس: این N دست در چه مسافتی (۲۵/۵۰/۱۰۰) و با چه زمانی بود؟
+حضور فقط سه وضعیت دارد: حاضر، غایب، تاخیر در ورود. «تاخیر داشت» مبهم است. بپرس: منظورتان غایب بود، تاخیر در ورود، یا حاضر بود؟
+تاریخ را فقط اگر در فهرست جلسات باشد بپذیر. شناگر را از رشته پیش‌فرضش حدس نزن.
+وقتی همه چیز کامل و عددی شد، aiFeedback را دقیقاً سه خط مربیگری بنویس و proposedUpdates را فقط برای همان موارد صریح پر کن.`,
         user: JSON.stringify({
-          note: String(contextNote || text || "").slice(0, 800),
-          reply: String(text || "").slice(0, 400),
-          name: student.name,
+          swimmer: student.name,
+          originalNote: String(contextNote || text || "").slice(0, 900),
+          questionsAlreadyAsked: dialogue && dialogue.questions ? dialogue.questions : [],
+          coachReplies: dialogue && dialogue.replies ? dialogue.replies : [],
+          today: TODAY_KEY,
+          sessions: SESSION_DATES,
         }),
       });
-      const feedback = Array.isArray(json?.aiFeedback)
-        ? json.aiFeedback.map((line) => String(line).trim()).filter(Boolean).slice(0, 3)
-        : [];
-      return {
-        ...local,
-        aiFeedback: feedback.length === 3 ? feedback.join("\n") : local.aiFeedback,
-        engine: "ai",
-      };
+      const decision = modelEventDecision(json);
+      if (!decision) return { ...local, engine: "offline" };
+      return { ...decision, facts: local.facts, engine: "ai" };
     } catch (err) {
       return { ...local, engine: "offline" };
     }

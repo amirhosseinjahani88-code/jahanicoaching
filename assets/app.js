@@ -1048,11 +1048,11 @@ function applyEventUpdates(student, updates) {
   return done;
 }
 
-async function readEventExtraction(student, text, priorFacts, contextNote) {
+async function readEventExtraction(student, text, priorFacts, contextNote, dialogue) {
   try {
-    return await AIRemote.extractEvent(student, text, priorFacts, contextNote);
+    return await AIRemote.extractEvent(student, text, priorFacts, contextNote, dialogue);
   } catch (err) {
-    return AI.extractEvent(student, text, priorFacts);
+    return AI.extractEvent(student, text, priorFacts && priorFacts.record ? priorFacts : undefined);
   }
 }
 
@@ -1083,6 +1083,7 @@ APP.action("event:save", async (data) => {
       analysis: "",
       questions: extracted.clarifyingQuestions,
       facts: extracted.facts,
+      replies: [],
       answer: "",
     };
     paintEventExtras(student.id);
@@ -1115,11 +1116,16 @@ APP.action("event:confirm", async (data) => {
     button.disabled = true;
     button.textContent = "در حال تطبیق…";
   }
-  const extracted = await readEventExtraction(student, answer, pending.facts, pending.text);
+  const replies = (pending.replies || []).concat(answer);
+  const extracted = await readEventExtraction(student, answer, pending.facts, pending.text, {
+    questions: pending.questions || [],
+    replies,
+  });
   if (extracted.clarifyingQuestions.length) {
     APP.ui.eventPending = {
       ...pending,
       answer,
+      replies,
       questions: extracted.clarifyingQuestions,
       facts: extracted.facts,
     };
