@@ -18,6 +18,7 @@ const APP = (() => {
     biomechStudent: null,
     biomechStroke: "",
     eventPending: null,
+    recordFocus: {},
     biomechResult: null,
     biomechPanel: null,
     ocrResult: null,
@@ -1024,6 +1025,7 @@ function applyEventUpdates(student, updates) {
   updates.forEach((update) => {
     if (update.type === "record") {
       SJ.applyRecord(student, update);
+      APP.ui.recordFocus[student.id] = { stroke: update.stroke, distance: Number(update.distance) };
       const change = update.time == null
         ? `${Number(update.delta) < 0 ? "کاهش" : "افزایش"} ${UI.fa(Math.abs(Number(update.delta)))} ثانیه`
         : `${UI.secs(update.time)} ثانیه`;
@@ -1055,6 +1057,49 @@ async function readEventExtraction(student, text, priorFacts, contextNote, dialo
     return AI.extractEvent(student, text, priorFacts && priorFacts.record ? priorFacts : undefined);
   }
 }
+
+function selectedRecord(studentId) {
+  const saved = APP.ui.recordFocus[studentId] || {};
+  const strokes = ["کرال سینه", "کرال پشت", "قورباغه", "پروانه"];
+  const distances = [25, 50, 100, 200];
+  return {
+    stroke: strokes.includes(saved.stroke) ? saved.stroke : "کرال سینه",
+    distance: distances.includes(Number(saved.distance)) ? Number(saved.distance) : 50,
+  };
+}
+
+function paintRecordBoard(student) {
+  const panel = document.getElementById("record-panel");
+  if (panel && student) panel.outerHTML = CoachViews.recordBoard(student);
+}
+
+APP.action("record:filter", (data) => {
+  const current = selectedRecord(data.id);
+  APP.ui.recordFocus[data.id] = {
+    stroke: data.stroke || current.stroke,
+    distance: data.distance ? Number(data.distance) : current.distance,
+  };
+  paintRecordBoard(SJ.studentById(data.id));
+});
+
+APP.action("record:focus", () => {
+  const input = document.getElementById("record-time");
+  if (input) input.focus();
+});
+
+APP.action("record:add", (data) => {
+  const student = SJ.studentById(data.id);
+  if (!student) return;
+  const time = APP.numberFrom(APP.value("record-time"));
+  if (!time) {
+    UI.toast("زمان رکورد را به ثانیه بنویسید.");
+    return;
+  }
+  const selected = selectedRecord(student.id);
+  SJ.applyRecord(student, { stroke: selected.stroke, distance: selected.distance, time });
+  paintRecordBoard(student);
+  UI.toast(`رکورد ${selected.stroke} ${UI.fa(selected.distance)} متر ثبت شد.`);
+});
 
 APP.action("event:save", async (data) => {
   const text = APP.value("event-note").trim();

@@ -346,6 +346,77 @@ const CoachViews = (() => {
       .join("")}</div>`;
   }
 
+  function recordSelection(studentId) {
+    const saved = APP.ui.recordFocus[studentId] || {};
+    const strokes = ["کرال سینه", "کرال پشت", "قورباغه", "پروانه"];
+    const distances = [25, 50, 100, 200];
+    return {
+      stroke: strokes.includes(saved.stroke) ? saved.stroke : "کرال سینه",
+      distance: distances.includes(Number(saved.distance)) ? Number(saved.distance) : 50,
+    };
+  }
+
+  function recordBoard(student) {
+    const selected = recordSelection(student.id);
+    const rows = SJ.studentRecords(student.id, selected.stroke, selected.distance);
+    const timed = rows.filter((row) => Number.isFinite(Number(row.time)));
+    const strokeLabel = selected.stroke === "کرال سینه" ? "کرال سینه (آزاد)" : selected.stroke;
+    const strokeButtons = ["کرال سینه", "کرال پشت", "قورباغه", "پروانه"]
+      .map((stroke) => {
+        const on = stroke === selected.stroke;
+        const label = stroke === "کرال سینه" ? "کرال سینه (آزاد)" : stroke;
+        return `<button type="button" data-action="record:filter" data-id="${student.id}" data-stroke="${stroke}" ${on ? 'aria-current="page"' : ""}>${label}</button>`;
+      })
+      .join("");
+    const distanceButtons = [25, 50, 100, 200]
+      .map((distance) => {
+        const on = distance === selected.distance;
+        return `<button type="button" data-action="record:filter" data-id="${student.id}" data-distance="${distance}" ${on ? 'aria-current="page"' : ""}>${UI.fa(distance)}</button>`;
+      })
+      .join("");
+    const chart = timed.length
+      ? UI.lineChart({
+          labels: timed.map((row) => row.date),
+          values: timed.map((row) => Number(row.time)),
+          betterIsLower: true,
+          unit: "ثانیه",
+        })
+      : "";
+    const empty = !rows.length
+      ? `<div class="empty-record">
+          <p>هنوز رکوردی برای شنای ${UI.escapeHtml(strokeLabel)} ${UI.fa(selected.distance)} متر ثبت نشده است.</p>
+          <button type="button" class="btn-primary btn-sm" data-action="record:focus" data-id="${student.id}">ثبت رکورد</button>
+        </div>`
+      : "";
+    const table = rows.length
+      ? `<div class="stack">${rows
+          .map((row) => {
+            const mark = Number.isFinite(Number(row.time))
+              ? `${UI.secs(row.time)} ثانیه`
+              : row.delta != null
+                ? `${Number(row.delta) < 0 ? "کاهش" : "افزایش"} ${UI.fa(Math.abs(Number(row.delta)))} ثانیه`
+                : "—";
+            return `<div class="ledger-row"><span>${UI.escapeHtml(row.date)}</span><span class="num">${mark}</span></div>`;
+          })
+          .join("")}</div>`
+      : "";
+    return `<section class="card stack" id="record-panel">
+      <div class="space-between record-head">
+        <h2 class="title-md">روند رکوردها</h2>
+        <div class="record-controls">
+          <div class="tabs" role="tablist" aria-label="نوع شنا">${strokeButtons}</div>
+          <div class="tabs" role="tablist" aria-label="مسافت">${distanceButtons}</div>
+        </div>
+      </div>
+      ${empty || chart}
+      ${table}
+      <div class="record-quick" id="record-quick">
+        <label class="field"><span>زمان ${UI.escapeHtml(strokeLabel)} ${UI.fa(selected.distance)} متر (ثانیه)</span><input id="record-time" inputmode="decimal" placeholder="مثلاً ۳۴٫۲" /></label>
+        <button type="button" class="btn-primary btn-sm" data-action="record:add" data-id="${student.id}">ثبت رکورد</button>
+      </div>
+    </section>`;
+  }
+
   function student360(id) {
     const student = SJ.studentById(id);
     if (!student) {
@@ -380,10 +451,7 @@ const CoachViews = (() => {
           ${UI.kpi("وضعیت مالی", balance.due === 0 ? "تسویه شده" : UI.millions(balance.due), `شهریه ${UI.millions(student.fee)}`, balance.due ? "kpi-warn" : "")}
         </div>
 
-        <section class="card stack">
-          <h2 class="title-md">روند رکورد ${UI.escapeHtml(student.event)}</h2>
-          ${UI.lineChart({ labels: CHART_MONTHS, values: student.times, betterIsLower: true, unit: "ثانیه" })}
-        </section>
+        ${recordBoard(student)}
 
         <div class="two-col">
           <section class="card stack">
@@ -1228,6 +1296,7 @@ const CoachViews = (() => {
     student360,
     eventTimelineHtml,
     eventClarifyHtml,
+    recordBoard,
     workoutPage,
     sessionsPage,
     sessionDetailHtml,

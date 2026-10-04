@@ -1053,6 +1053,39 @@ button.plan-chip {
   box-shadow: var(--shadow-sm);
 }
 
+.record-head {
+  align-items: flex-start;
+}
+
+.record-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.45rem;
+  max-width: 100%;
+}
+
+.empty-record {
+  display: grid;
+  gap: 0.8rem;
+  justify-items: start;
+  padding: 1.2rem;
+  border: 1px dashed var(--line, #d7e0ee);
+  border-radius: 16px;
+}
+
+.record-quick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.record-quick .field {
+  min-width: 14rem;
+  flex: 1;
+}
+
 .student-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1.4fr) minmax(0, 1.2fr) auto;

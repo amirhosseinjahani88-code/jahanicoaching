@@ -107,6 +107,7 @@ const SJ = (() => {
       ownedVault: ["bio", "dryland", "nutrition", "rate"],
       viewedStudent: null,
       notesTimeline: {},
+      records: {},
       reminderTemplate: "",
     };
   }
@@ -124,6 +125,7 @@ const SJ = (() => {
   let state = load();
   attachNotes(state);
   restoreTimes();
+  ensureRecords();
 
   function load() {
     try {
@@ -372,6 +374,32 @@ const SJ = (() => {
     if (/قورباغه/.test(student.event)) return "قورباغه";
     if (/پروانه/.test(student.event)) return "پروانه";
     return "کرال سینه";
+  }
+
+  function ensureRecords() {
+    if (!state.records || typeof state.records !== "object" || Array.isArray(state.records)) state.records = {};
+    let changed = false;
+    STUDENTS.forEach((student) => {
+      if (!Array.isArray(state.records[student.id])) {
+        state.records[student.id] = [];
+        changed = true;
+      }
+      if (state.records[student.id].some((row) => row.seed)) return;
+      const stroke = mainStroke(student);
+      student.times.forEach((time, index) => {
+        const date = SESSION_DATES[Math.max(0, SESSION_DATES.length - student.times.length + index)] || TODAY_KEY;
+        state.records[student.id].push({ stroke, distance: 50, time: Number(time), delta: null, date, seed: true });
+      });
+      changed = true;
+    });
+    if (changed) save();
+  }
+
+  function studentRecords(studentId, stroke, distance) {
+    ensureRecords();
+    const rows = state.records[studentId] || [];
+    if (!stroke) return rows;
+    return rows.filter((row) => row.stroke === stroke && Number(row.distance) === Number(distance));
   }
 
   function applyRecord(student, { stroke, distance, time, delta }) {
@@ -672,6 +700,7 @@ const SJ = (() => {
     mark,
     markOnDate,
     applyRecord,
+    studentRecords,
     latestRecordTime,
     markAll,
     setAttendanceNotes,
