@@ -17,6 +17,7 @@ const APP = (() => {
     studentGroup: "همه",
     biomechStudent: null,
     biomechStroke: "",
+    eventPending: null,
     biomechResult: null,
     biomechPanel: null,
     ocrResult: null,
@@ -1011,6 +1012,45 @@ APP.action("finance:print", () => {
   window.print();
 });
 
+function paintEventExtras(studentId) {
+  const box = document.getElementById("event-clarify");
+  if (box) box.innerHTML = CoachViews.eventClarifyHtml(studentId);
+  const list = document.getElementById("event-timeline");
+  if (list) list.innerHTML = CoachViews.eventTimelineHtml(studentId, true);
+}
+
+function applyEventUpdates(student, updates) {
+  const done = [];
+  updates.forEach((update) => {
+    if (update.type === "record") {
+      SJ.applyRecord(student, update);
+      done.push(`رکورد ${update.stroke} ${UI.fa(update.distance)} متر: ${UI.secs(update.time)} ثانیه`);
+    } else if (update.type === "biomech") {
+      SJ.addBiomech(student.id, {
+        date: TODAY_KEY,
+        distance: update.distance,
+        time: update.time,
+        strokes: update.strokeCount,
+        stroke: update.stroke,
+      });
+      done.push(`تست بیومکانیک ${update.stroke}`);
+    } else if (update.type === "attendance") {
+      SJ.markOnDate(student.id, update.status, update.date);
+      const label = update.status === "absent" ? "غایب" : update.status === "late" ? "تأخیر" : "حاضر";
+      done.push(`${label} در ${update.date}`);
+    }
+  });
+  return done;
+}
+
+async function readEventExtraction(student, text) {
+  try {
+    return await AIRemote.extractEvent(student, text);
+  } catch (err) {
+    return AI.extractEvent(student, text);
+  }
+}
+
 APP.action("event:save", async (data) => {
   const text = APP.value("event-note").trim();
   if (!text) {
@@ -1025,25 +1065,68 @@ APP.action("event:save", async (data) => {
     button.disabled = true;
     button.textContent = "در حال تحلیل…";
   }
-  let analysis = "";
-  try {
-    analysis = await AIRemote.eventAdvice(student, text);
-  } catch (err) {
-    analysis = AI.eventAdvice(student, text);
-  } finally {
-    if (button) {
-      button.disabled = false;
-      button.textContent = "تحلیل AI و ثبت";
-    }
+  const extracted = await readEventExtraction(student, text);
+  if (button) {
+    button.disabled = false;
+    button.textContent = "تحلیل AI و ثبت";
   }
-  SJ.addStudentNote(student.id, { text, analysis, showToParents });
+  if (extracted.clarifyingQuestions.length) {
+    APP.ui.eventPending = {
+      studentId: student.id,
+      text,
+      showToParents,
+      analysis: extracted.aiFeedback,
+      questions: extracted.clarifyingQuestions,
+      answer: "",
+    };
+    paintEventExtras(student.id);
+    UI.toast("برای ثبت دقیق داده، سؤال تکمیلی را جواب دهید.");
+    return;
+  }
+  APP.ui.eventPending = null;
+  const applied = applyEventUpdates(student, extracted.proposedUpdates);
+  SJ.addStudentNote(student.id, { text, analysis: extracted.aiFeedback, showToParents });
   const input = document.getElementById("event-note");
   if (input) input.value = "";
   const share = document.getElementById("event-parents");
   if (share) share.checked = false;
-  const list = document.getElementById("event-timeline");
-  if (list) list.innerHTML = CoachViews.eventTimelineHtml(student.id, true);
-  UI.toast(showToParents ? "وقایع ثبت شد و در پورتال اولیا دیده می‌شود." : "وقایع فقط در پرونده مربی ثبت شد.");
+  paintEventExtras(student.id);
+  if (applied.length) APP.render();
+  UI.toast(applied.length ? `ثبت شد: ${applied.join("، ")}` : showToParents ? "وقایع ثبت شد و در پورتال اولیا دیده می‌شود." : "وقایع فقط در پرونده مربی ثبت شد.");
+});
+
+APP.action("event:confirm", async (data) => {
+  const pending = APP.ui.eventPending;
+  const student = SJ.studentById((pending && pending.studentId) || data.id);
+  if (!pending || !student) return;
+  const answer = APP.value("event-clarify-text").trim();
+  if (!answer) {
+    UI.toast("پاسخ تکمیلی را بنویسید.");
+    return;
+  }
+  const button = document.getElementById("event-confirm");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "در حال تطبیق…";
+  }
+  const combined = `${pending.text}\n${answer}`;
+  const extracted = await readEventExtraction(student, combined);
+  if (extracted.clarifyingQuestions.length) {
+    APP.ui.eventPending = { ...pending, answer, questions: extracted.clarifyingQuestions, analysis: extracted.aiFeedback };
+    paintEventExtras(student.id);
+    UI.toast("هنوز یک مورد مبهم است. پاسخ را کامل‌تر بنویسید.");
+    return;
+  }
+  const applied = applyEventUpdates(student, extracted.proposedUpdates);
+  SJ.addStudentNote(student.id, { text: combined, analysis: extracted.aiFeedback || pending.analysis, showToParents: pending.showToParents });
+  APP.ui.eventPending = null;
+  const input = document.getElementById("event-note");
+  if (input) input.value = "";
+  const share = document.getElementById("event-parents");
+  if (share) share.checked = false;
+  paintEventExtras(student.id);
+  if (applied.length) APP.render();
+  UI.toast(applied.length ? `اعمال شد: ${applied.join("، ")}` : "وقایع ثبت شد.");
 });
 
 APP.action("session:open", (data) => {

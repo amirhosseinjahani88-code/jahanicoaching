@@ -262,6 +262,46 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
     }
   }
 
+  async function extractEvent(student, text) {
+    const local = AI.extractEvent(student, text);
+    if (!isEnabled()) return { ...local, engine: "offline" };
+    try {
+      const { json } = await complete({
+        system: `تو استخراج‌کننده داده از یادداشت مربی شنا هستی. حدس نزن و از رشته یا ماده پیش‌فرض شناگر استفاده نکن. فقط چیزی را پر کن که در متن آمده. فقط JSON:
+{"aiFeedback":["...","...","..."],"proposedUpdates":[{"type":"record|biomech|attendance","stroke":"کرال سینه|کرال پشت|قورباغه|پروانه|null","distance":50,"time":45,"delta":null,"strokeCount":null,"rate":null,"status":"present|late|absent|null","date":null}],"clarifyingQuestions":["..."]}
+رکورد فقط با شنا، مسافت ۲۵/۵۰/۱۰۰/۲۰۰ و زمان دقیق یا میزان تغییر ثانیه. اگر یکی نبود proposedUpdates رکورد نده و سوال بپرس.
+بیومکانیک: شنا و مسافت لازم است، به‌علاوه زمان و تعداد دست یا ریت. اگر شنا یا مسافت نبود سوال بپرس.
+حضور: اگر تاریخ نبود امروز است. دیروز یا جلسه قبلی یا تاریخ شمسی را تشخیص بده. اگر مبهم بود بپرس این غیبت مربوط به جلسه امروز است یا جلسه تاریخ مشخصی؟
+aiFeedback دقیقاً ۳ خط فنی، روانشناسی و اقدام جلسه بعد.`,
+        user: JSON.stringify({
+          note: String(text || "").slice(0, 800),
+          name: student.name,
+          today: TODAY_KEY,
+          sessions: SESSION_DATES,
+        }),
+      });
+      const feedback = Array.isArray(json?.aiFeedback)
+        ? json.aiFeedback.map((line) => String(line).trim()).filter(Boolean).slice(0, 3)
+        : [];
+      const gated = AI.extractEvent(student, text);
+      const questions = gated.clarifyingQuestions.slice();
+      if (questions.length) {
+        (Array.isArray(json?.clarifyingQuestions) ? json.clarifyingQuestions : []).forEach((item) => {
+          const line = String(item || "").trim();
+          if (line && !questions.includes(line)) questions.unshift(line);
+        });
+      }
+      return {
+        aiFeedback: feedback.length === 3 ? feedback.join("\n") : gated.aiFeedback,
+        proposedUpdates: questions.length ? [] : gated.proposedUpdates,
+        clarifyingQuestions: questions,
+        engine: "ai",
+      };
+    } catch (err) {
+      return { ...local, engine: "offline" };
+    }
+  }
+
   async function eventAdvice(student, text) {
     const local = AI.eventAdvice(student, text);
     if (!isEnabled()) return local;
@@ -422,6 +462,7 @@ latePlan یک ست جبرانی کوتاه با تکرار، مسافت و اس�
     biomechExplain,
     biomechAnalyze,
     eventAdvice,
+    extractEvent,
     cockpitInsights,
     ocrReceipt,
     ocrAttendance,

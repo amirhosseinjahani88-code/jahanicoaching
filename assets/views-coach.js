@@ -307,6 +307,17 @@ const CoachViews = (() => {
 
   /* ---------- پرونده ۳۶۰ شناگر ---------- */
 
+  function eventClarifyHtml(studentId) {
+    const pending = APP.ui.eventPending;
+    if (!pending || Number(pending.studentId) !== Number(studentId)) return "";
+    return `<div class="ai-box stack">
+      <strong>پاسخ تکمیلی جهت ثبت دقیق داده‌ها</strong>
+      <ul>${pending.questions.map((question) => `<li>${UI.escapeHtml(question)}</li>`).join("")}</ul>
+      <textarea id="event-clarify-text" rows="3" placeholder="مثلاً کرال سینه، ۵۰ متر، جلسه امروز">${UI.escapeHtml(pending.answer || "")}</textarea>
+      <button class="btn-primary btn-sm" type="button" id="event-confirm" data-action="event:confirm" data-id="${studentId}">تایید و اعمال نهایی</button>
+    </div>`;
+  }
+
   function eventTimelineHtml(studentId, forCoach) {
     const items = SJ.studentNotes(studentId).filter((item) => (forCoach ? true : item.showToParents === true));
     if (!items.length) {
@@ -416,7 +427,7 @@ const CoachViews = (() => {
           <h2 class="title-md">ثبت وقایع و نکات مربیگری</h2>
           <label class="field">
             <span>متن رخداد</span>
-            <textarea id="event-note" rows="3" placeholder="مثلاً امروز در ست اصلی ریتم را از دست داد یا مصدوم بود"></textarea>
+            <textarea id="event-note" rows="3" placeholder="مثلاً امروز در ست اصلی ریتم را از دست داد یا مصدوم بود">${UI.escapeHtml((APP.ui.eventPending && Number(APP.ui.eventPending.studentId) === student.id && APP.ui.eventPending.text) || "")}</textarea>
           </label>
           <div class="row">
             <label class="switch">
@@ -426,6 +437,7 @@ const CoachViews = (() => {
             </label>
             <button class="btn-primary btn-sm" id="event-save" type="button" data-action="event:save" data-id="${student.id}">تحلیل AI و ثبت</button>
           </div>
+          <div id="event-clarify">${eventClarifyHtml(student.id)}</div>
           <div id="event-timeline">${eventTimelineHtml(student.id, true)}</div>
         </section>
 
@@ -1210,6 +1222,7 @@ const CoachViews = (() => {
     students,
     student360,
     eventTimelineHtml,
+    eventClarifyHtml,
     workoutPage,
     sessionsPage,
     sessionDetailHtml,

@@ -284,6 +284,133 @@ const AI = (() => {
 
   /* ---------- بیومکانیک و امتیاز FINA ---------- */
 
+  function eventDigits(text) {
+    return String(text || "")
+      .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+      .replace(/(\d)[٫](\d)/g, "$1.$2");
+  }
+
+  function mentionedStrokes(text) {
+    const found = [];
+    if (/پروانه/.test(text)) found.push("پروانه");
+    if (/قورباغه/.test(text)) found.push("قورباغه");
+    if (/کرال پشت|(?<!کرال )پشت/.test(text)) found.push("کرال پشت");
+    if (/کرال سینه|آزاد|(?<!کرال )سینه/.test(text)) found.push("کرال سینه");
+    return found;
+  }
+
+  function mentionedDistance(text) {
+    const match = eventDigits(text).match(/(25|50|100|200)\s*متر/);
+    return match ? Number(match[1]) : null;
+  }
+
+  function mentionedExactTime(text) {
+    const digits = eventDigits(text);
+    if (/ثانیه\s*(کم|زیاد|بهتر|بدتر)|کم شد|زیاد شد/.test(digits) && !/زمان/.test(digits)) return null;
+    const match = digits.match(/زمان(?:ش)?\s*(?:شد|به|:|＝|=)?\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*ثانیه/);
+    if (!match) return null;
+    const raw = match[1] || match[2] || "";
+    const time = Number(raw);
+    return Number.isFinite(time) && time > 0 ? time : null;
+  }
+
+  function mentionedDelta(text) {
+    const digits = eventDigits(text);
+    const match = digits.match(/(\d+(?:\.\d+)?)\s*ثانیه\s*(کم|زیاد|بهتر|بدتر)/);
+    if (!match && !/کم شد|زیاد شد/.test(digits)) return null;
+      const amount = match ? Number(match[1]) : null;
+    if (!Number.isFinite(amount)) return null;
+    const word = match ? match[2] : /کم/.test(digits) ? "کم" : "زیاد";
+    return /کم|بهتر/.test(word) ? -amount : amount;
+  }
+
+  function mentionedSessionDate(text) {
+    const digits = eventDigits(text);
+    const explicit = digits.match(/(14\d{2}\/\d{2}\/\d{2})/);
+    if (explicit) {
+      const parts = explicit[1].split("/");
+      return `${UI.fa(parts[0])}/${UI.fa(parts[1])}/${UI.fa(parts[2])}`;
+    }
+    const index = SESSION_DATES.indexOf(TODAY_KEY);
+    if (/دیروز|جلسه قبلی|جلسه قبل/.test(text)) return index > 0 ? SESSION_DATES[index - 1] : null;
+    return null;
+  }
+
+  function extractEvent(student, text) {
+    const note = String(text || "").trim();
+    const questions = [];
+    const updates = [];
+    const strokes = mentionedStrokes(note);
+    const stroke = strokes.length === 1 ? strokes[0] : null;
+    const distance = mentionedDistance(note);
+    const exactTime = mentionedExactTime(note);
+    const delta = mentionedDelta(note);
+
+    const recordIntent = /رکورد|زمانش|زمان شد|ثانیه کم|ثانیه زیاد|کم شد|زیاد شد/.test(note);
+    if (recordIntent) {
+      const missing = [];
+      if (!stroke) missing.push("نوع شنا (سینه، پشت، قورباغه یا پروانه)");
+      if (!distance) missing.push("مسافت (۲۵، ۵۰، ۱۰۰ یا ۲۰۰ متر)");
+      if (exactTime == null && delta == null) missing.push("زمان دقیق یا میزان تغییر بر حسب ثانیه");
+      if (strokes.length > 1) missing.push("فقط یک شنا");
+      if (missing.length) {
+        questions.push(`آقای مربی، این تغییر رکورد مربوط به کدام شنا (سینه، پشت، قورباغه، پروانه) و چه مسافتی (۲۵، ۵۰، ۱۰۰ یا ۲۰۰ متر) است؟ ${missing.join("، ")} در متن نیامده و حدس زده نمی‌شود.`);
+      } else if (exactTime == null && delta != null && SJ.latestRecordTime(student, stroke, distance) == null) {
+        questions.push(`برای ${stroke} ${UI.fa(distance)} متر رکورد قبلی ثبت نشده. زمان دقیق جدید را بنویسید.`);
+      } else {
+        const time = exactTime != null ? exactTime : Number((SJ.latestRecordTime(student, stroke, distance) + delta).toFixed(2));
+        if (time > 0) updates.push({ type: "record", stroke, distance, time, delta: delta == null ? null : delta });
+      }
+    }
+
+    const biomechIntent = /ریت|دست‌?کشی|بیومکانیک|پیشروی/.test(note);
+    if (biomechIntent) {
+      const digits = eventDigits(note);
+      const strokeCountMatch = digits.match(/(\d+)\s*دست/);
+      const rateMatch = digits.match(/ریت\s*(\d+(?:\.\d+)?)/);
+      const strokeCount = strokeCountMatch ? Number(strokeCountMatch[1]) : null;
+      const rate = rateMatch ? Number(rateMatch[1].replace("/", ".")) : null;
+      const missing = [];
+      if (!stroke) missing.push("نوع شنا");
+      if (!distance) missing.push("مسافت");
+      if (exactTime == null && strokeCount == null && rate == null) missing.push("زمان، تعداد دست یا ریت");
+      if (missing.length) {
+        questions.push(`برای ثبت بیومکانیک، ${missing.join(" و ")} در متن مشخص نیست. نوع شنا و مسافت را هم بنویسید.`);
+      } else if (exactTime != null && (strokeCount != null || rate != null)) {
+        const count = strokeCount != null ? strokeCount : Math.max(1, Math.round((rate * exactTime) / 60));
+        updates.push({ type: "biomech", stroke, distance, time: exactTime, strokeCount: count, rate });
+      } else {
+        questions.push("برای تست بیومکانیک زمان و تعداد دست، یا زمان و ریت عددی، هر دو لازم است.");
+      }
+    }
+
+    const attendanceIntent = /غایب|نیامد|حاضر|تأخیر|تاخیر|دیر آمد|با تأخیر/.test(note);
+    if (attendanceIntent) {
+      let status = null;
+      if (/غایب|نیامد/.test(note)) status = "absent";
+      else if (/تأخیر|تاخیر|دیر/.test(note)) status = "late";
+      else if (/حاضر/.test(note)) status = "present";
+      const dated = mentionedSessionDate(note);
+      const saysToday = /امروز/.test(note);
+      const saysOther = /دیروز|جلسه قبلی|جلسه قبل/.test(note) || !!eventDigits(note).match(/14\d{2}\/\d{2}\/\d{2}/);
+      if (!status) {
+        questions.push("وضعیت حضور را واضح بنویسید: حاضر، تأخیر یا غایب.");
+      } else if (saysToday && saysOther) {
+        questions.push("این غیبت مربوط به جلسه امروز است یا جلسه تاریخ مشخصی؟");
+      } else if (saysOther && !dated) {
+        questions.push("این غیبت مربوط به جلسه امروز است یا جلسه تاریخ مشخصی؟");
+      } else {
+        updates.push({ type: "attendance", status, date: dated || TODAY_KEY });
+      }
+    }
+
+    return {
+      aiFeedback: eventAdvice(student, note),
+      proposedUpdates: questions.length ? [] : updates,
+      clarifyingQuestions: questions,
+    };
+  }
+
   function eventAdvice(student, text) {
     const note = String(text || "").trim();
     const injured = /مصدوم|آسیب|درد|کشید|گرفتگی/.test(note);
@@ -502,6 +629,7 @@ const AI = (() => {
     ocrReceipt,
     attendanceInsight,
     eventAdvice,
+    extractEvent,
     parentReport,
     cockpitInsights,
     FOCUS_PRESETS,

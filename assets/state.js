@@ -123,6 +123,7 @@ const SJ = (() => {
 
   let state = load();
   attachNotes(state);
+  restoreTimes();
 
   function load() {
     try {
@@ -340,9 +341,58 @@ const SJ = (() => {
   }
 
   function mark(studentId, status) {
-    const sheet = todaySheet();
-    sheet.marks[studentId] = status;
+    markOnDate(studentId, status, TODAY_KEY);
+  }
+
+  function markOnDate(studentId, status, date) {
+    const key = date || TODAY_KEY;
+    if (!["present", "late", "absent"].includes(status)) return;
+    if (!state.attendance[key]) {
+      state.attendance[key] = { marks: {}, notes: "", analysis: null, locked: false };
+    }
+    state.attendance[key].marks[Number(studentId)] = status;
     save();
+  }
+
+  function rememberTimes(student) {
+    if (!state.timesOverride) state.timesOverride = {};
+    state.timesOverride[student.id] = student.times.slice();
+  }
+
+  function restoreTimes() {
+    Object.keys(state.timesOverride || {}).forEach((id) => {
+      const student = studentById(id);
+      const saved = state.timesOverride[id];
+      if (student && Array.isArray(saved) && saved.length) student.times = saved.slice();
+    });
+  }
+
+  function mainStroke(student) {
+    if (/پشت/.test(student.event)) return "کرال پشت";
+    if (/قورباغه/.test(student.event)) return "قورباغه";
+    if (/پروانه/.test(student.event)) return "پروانه";
+    return "کرال سینه";
+  }
+
+  function applyRecord(student, { stroke, distance, time }) {
+    if (!state.records) state.records = {};
+    if (!Array.isArray(state.records[student.id])) state.records[student.id] = [];
+    const entry = { stroke, distance: Number(distance), time: Number(time), date: TODAY_KEY };
+    state.records[student.id].push(entry);
+    if (entry.distance === 50 && stroke === mainStroke(student)) {
+      student.times.push(Number(entry.time.toFixed(2)));
+      rememberTimes(student);
+    }
+    save();
+    return entry;
+  }
+
+  function latestRecordTime(student, stroke, distance) {
+    const log = (state.records && state.records[student.id]) || [];
+    const found = log.filter((row) => row.stroke === stroke && Number(row.distance) === Number(distance)).pop();
+    if (found) return Number(found.time);
+    if (Number(distance) === 50 && stroke === mainStroke(student)) return Number(student.times[student.times.length - 1]);
+    return null;
   }
 
   function markAll(status) {
@@ -612,6 +662,9 @@ const SJ = (() => {
     studentByToken,
     todaySheet,
     mark,
+    markOnDate,
+    applyRecord,
+    latestRecordTime,
     markAll,
     setAttendanceNotes,
     setAttendanceAnalysis,
