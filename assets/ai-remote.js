@@ -109,31 +109,32 @@ const AIRemote = (() => {
 {"title":"...","group":"...","level":"مبتدی|متوسط|پیشرفته|رقابتی","stroke":"کرال سینه|قورباغه|پروانه|کرال پشت","focus":"استقامت|سرعت|تکنیک|آستانه|استارت","minutes":60,"poolLength":25,"rateTarget":38,"coachTip":"...","sets":[{"phase":"...","detail":"...","meters":200,"note":"..."}]}
 ۴ تا ۶ بخش با ترتیب گرم‌کردن، تکنیک، ست اصلی، ست پا، سردکردن. meters مضرب ۲۵ باشد.`;
 
-  function workoutPrompt(targetMeters) {
-    const target = Math.round(Number(targetMeters));
+  function workoutPrompt(parsed) {
+    const target = Math.round(Number(parsed.targetMeters));
     const distanceRule =
       target > 0
-        ? `اگر پارامتر متراژ هدف ارسال شده است، مجموع فواصل تمام بخش‌ها (گرم‌کردن + دریل + ست اصلی + ست پا + سردکردن) باید دقیقاً معادل ${target} متر باشد و نه کمتر و نه بیشتر. اگر مشخص نشده، متراژ متناسب با زمان جلسه تنظیم شود.`
-        : `اگر پارامتر متراژ هدف ارسال شده است، مجموع فواصل تمام بخش‌ها (گرم‌کردن + دریل + ست اصلی + ست پا + سردکردن) باید دقیقاً معادل متراژ هدف باشد و نه کمتر و نه بیشتر. اگر مشخص نشده، متراژ متناسب با زمان جلسه تنظیم شود. در این درخواست متراژ هدف مشخص نشده؛ هیچ سقف متراژ اجباری اعمال نکن و متراژ را متناسب با زمان جلسه، رده سنی و سطح پیشنهاد بده.`;
-    return `${WORKOUT_SYSTEM}\n${distanceRule}`;
+        ? `متراژ این جلسه دقیقاً ${target} متر است. مجموع meters گرم‌کردن + تکنیک + ست اصلی + ست پا + سردکردن باید دقیقاً ${target} باشد، نه کمتر و نه بیشتر.`
+        : `در متن متراژ نیامده. خودت از مدت ${parsed.minutes} دقیقه، رده ${parsed.group} و سطح ${parsed.level} یک متراژ استاندارد پیشنهاد بده.`;
+    return `${WORKOUT_SYSTEM}\n${distanceRule}\nپارامترهای استخراج‌شده از متن: رده ${parsed.group}، سطح ${parsed.level}، ${parsed.minutes} دقیقه، تاکید ${parsed.focus}، شنا ${parsed.stroke}.`;
   }
 
-  async function generateWorkout(brief, targetMeters) {
+  async function generateWorkout(brief) {
     const text = String(brief || "").trim();
     const parsed = AI.parseBrief(text);
-    const explicit = Math.round(Number(targetMeters));
-    const requested = explicit > 0 ? explicit : targetMeters === 0 || targetMeters === "" ? 0 : parsed.targetMeters || 0;
+    const requested = parsed.targetMeters > 0 ? parsed.targetMeters : 0;
     const offline = () => ({ ...AI.generateWorkout({ ...parsed, targetMeters: requested }), engine: "offline" });
     if (!text || !isEnabled()) return offline();
     try {
       const { json, model } = await complete({
-        system: workoutPrompt(requested),
+        system: workoutPrompt(parsed),
         user: JSON.stringify({
           brief: text,
           targetMeters: requested > 0 ? requested : null,
           group: parsed.group,
           level: parsed.level,
           minutes: parsed.minutes,
+          focus: parsed.focus,
+          stroke: parsed.stroke,
         }),
       });
       const workout = normalizeWorkout(json);

@@ -580,12 +580,9 @@ const CoachViews = (() => {
           <h2 class="title-md">درخواست جلسه با متن یا ویس</h2>
           <label class="field">
             <span>توضیح جلسه</span>
-            <textarea id="ai-brief" rows="3" placeholder="${UI.escapeHtml(AI.voice.samples[0])}">${UI.escapeHtml(APP.ui.brief || "")}</textarea>
+            <textarea id="ai-brief" rows="4" placeholder="${UI.escapeHtml(AI.voice.samples[0])}">${UI.escapeHtml(APP.ui.brief || "")}</textarea>
           </label>
-          <label class="field">
-            <span>متراژ هدف (اختیاری)</span>
-            <input id="ai-target" inputmode="numeric" placeholder="خالی بماند تا متراژ متناسب با جلسه پیشنهاد شود" value="${UI.escapeHtml(APP.ui.targetMeters || "")}" />
-          </label>
+          <p class="muted" style="font-size:.9rem">متراژ، رده سنی، مدت و تاکید تمرین از همین متن خوانده می‌شود. مثلاً «۱ کیلومتر» یا «دو هزار متر».</p>
           <div class="row">
             <button class="btn-primary" data-action="workout:generate" ${APP.ui.aiBusy ? "disabled" : ""}>
               ${APP.ui.aiBusy ? "در حال ساخت جلسه…" : "تولید جلسه با AI"}

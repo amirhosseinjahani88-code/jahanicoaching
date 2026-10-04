@@ -5,7 +5,6 @@ const APP = (() => {
   const ui = {
     workoutTab: null,
     brief: "",
-    targetMeters: "",
     draftPreview: null,
     manual: { title: "جلسه دستی امروز", sets: [] },
     aiBusy: false,
@@ -208,8 +207,6 @@ const APP = (() => {
         render();
       } else if (node.id === "ai-brief") {
         ui.brief = node.value;
-      } else if (node.id === "ai-target") {
-        ui.targetMeters = node.value;
       } else if (node.id === "demo-brief") {
         APP.demoBrief = node.value;
       }
@@ -612,13 +609,6 @@ APP.action("attendance:pick", () => {
 
 /* ---------- تمرین‌نویسی ---------- */
 
-function workoutTarget(value) {
-  const digits = String(value || "").replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)));
-  const parsed = Number(digits.replace(/[^\d]/g, ""));
-  APP.ui.targetMeters = value || "";
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
-}
-
 APP.action("workout:tab", (data) => {
   APP.ui.workoutTab = data.value;
   APP.render();
@@ -638,12 +628,11 @@ APP.action("workout:generate", async () => {
     return;
   }
   APP.ui.brief = brief;
-  const targetMeters = workoutTarget(APP.value("ai-target", APP.ui.targetMeters));
   APP.ui.aiBusy = true;
   APP.ui.draftPreview = null;
   APP.render();
 
-  const workout = await AIRemote.generateWorkout(brief, targetMeters);
+  const workout = await AIRemote.generateWorkout(brief);
   APP.ui.aiBusy = false;
   APP.ui.draftPreview = { ...workout, source: "ai-text" };
   APP.render();
@@ -657,13 +646,12 @@ APP.action("workout:generate", async () => {
 
 APP.action("workout:voice", () => {
   const finish = async (transcript, simulated) => {
-    const targetMeters = workoutTarget(APP.value("ai-target", APP.ui.targetMeters));
     APP.ui.brief = transcript;
     APP.ui.aiBusy = true;
     APP.ui.draftPreview = null;
     APP.render();
 
-    const workout = await AIRemote.generateWorkout(transcript, targetMeters);
+    const workout = await AIRemote.generateWorkout(transcript);
     APP.ui.aiBusy = false;
     APP.ui.draftPreview = { ...workout, source: "ai-voice" };
     APP.render();

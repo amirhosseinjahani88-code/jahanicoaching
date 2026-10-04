@@ -113,13 +113,23 @@ const AI = (() => {
       assigned[main] = target - assigned.reduce((sum, meters) => sum + meters, 0);
     }
 
-    return sets
+    const fitted = sets
       .map((set, index) => ({
         ...set,
         meters: assigned[index],
         detail: syncSetDetail(set.detail, assigned[index]),
       }))
       .filter((set) => set.meters > 0);
+    const sum = fitted.reduce((total, set) => total + set.meters, 0);
+    if (fitted.length && sum !== target) {
+      const index = fitted.reduce((best, set, i) => (set.meters > fitted[best].meters ? i : best), 0);
+      fitted[index] = {
+        ...fitted[index],
+        meters: fitted[index].meters + (target - sum),
+        detail: syncSetDetail(fitted[index].detail, fitted[index].meters + (target - sum)),
+      };
+    }
+    return fitted;
   }
 
   function syncSetDetail(detail, meters) {
@@ -223,18 +233,105 @@ const AI = (() => {
 
   /* ---------- تبدیل گفتار یا متن آزاد به پارامترهای جلسه ---------- */
 
-  function parseBrief(text) {
-    const clean = String(text || "");
-    const digits = clean.replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+  const SPOKEN = {
+    یک: 1, یه: 1, دو: 2, سه: 3, چهار: 4, پنج: 5, شش: 6, هفت: 7, هشت: 8, نه: 9, ده: 10,
+    یازده: 11, دوازده: 12, سیزده: 13, چهارده: 14, پانزده: 15, شانزده: 16, هفده: 17, هجده: 18, نوزده: 19,
+    بیست: 20, سی: 30, چهل: 40, پنجاه: 50, شصت: 60, هفتاد: 70, هشتاد: 80, نود: 90,
+    صد: 100, یکصد: 100, دویست: 200, سیصد: 300, چهارصد: 400, پانصد: 500, ششصد: 600, هفتصد: 700, هشتصد: 800, نهصد: 900,
+  };
 
-    const minutesMatch = digits.match(/(\d{2,3})\s*دقیقه/);
-    const stroke = STROKES.find((s) => clean.includes(s)) || "کرال سینه";
+  function briefDigits(text) {
+    return String(text || "")
+      .replace(/\u200c/g, " ")
+      .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+      .replace(/(\d)[٫.](\d)/g, "$1.$2");
+  }
+
+  function spokenNumber(phrase) {
+    const tokens = String(phrase || "")
+      .trim()
+      .split(/\s+/)
+      .filter((token) => token && token !== "و");
+    if (!tokens.length) return null;
+    let total = 0;
+    let current = 0;
+    let seen = false;
+    tokens.forEach((token) => {
+      if (token === "هزار") {
+        total += (current || 1) * 1000;
+        current = 0;
+        seen = true;
+        return;
+      }
+      if (token === "نیم") {
+        current += 0.5;
+        seen = true;
+        return;
+      }
+      if (SPOKEN[token] == null) return;
+      current += SPOKEN[token];
+      seen = true;
+    });
+    return seen ? Math.round(total + current) : null;
+  }
+
+  function clampMeters(value) {
+    const meters = Math.round(Number(value));
+    if (!Number.isFinite(meters) || meters < 200 || meters > 12000) return 0;
+    return meters;
+  }
+
+  function extractTargetMeters(raw) {
+    const source = String(raw || "").replace(/\u200c/g, " ");
+    const digits = briefDigits(source);
+    const kilometer = digits.match(/(\d+(?:\.\d+)?)\s*کیلومتر/);
+    if (kilometer) return clampMeters(Number(kilometer[1]) * 1000);
+    const spokenKilometer = source.match(/((?:یک|یه|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده)(?:\s+و\s+نیم)?|نیم)\s*کیلومتر/);
+    if (spokenKilometer) {
+      const amount = spokenKilometer[1] === "نیم" ? 0.5 : spokenNumber(spokenKilometer[1]);
+      if (amount) return clampMeters(amount * 1000);
+    }
+    if (/متر|متراژ|حجم|کیلومتر/.test(source)) {
+      const thousand = source.match(/((?:یک|یه|دو|سه|چهار|پنج|شش|هفت|هشت|نه|ده)\s+)?هزار(?:\s+و\s+(پانصد|دویست|سیصد|چهارصد|ششصد|هفتصد|هشتصد|نهصد|صد|پنجاه))?/);
+      if (thousand) {
+        const thousands = thousand[1] ? SPOKEN[thousand[1].trim()] || 1 : 1;
+        const extra = thousand[2] ? SPOKEN[thousand[2]] || 0 : 0;
+        return clampMeters(thousands * 1000 + extra);
+      }
+    }
+    const labeled = digits.match(/(?:متراژ|حجم)(?:\s*هدف)?\s*[:：]?\s*(\d{2,5})/);
+    if (labeled) return clampMeters(labeled[1]);
+    const found = [];
+    const plain = /(?:^|[^×x\d])(\d{3,5})\s*متر/g;
+    let match = plain.exec(digits);
+    while (match) {
+      found.push(Number(match[1]));
+      match = plain.exec(digits);
+    }
+    return found.length ? clampMeters(Math.max(...found)) : 0;
+  }
+
+  function extractMinutes(raw) {
+    const source = String(raw || "").replace(/\u200c/g, " ");
+    const digits = briefDigits(source);
+    if (/یک\s+ساعت\s+و\s+نیم|یک\s+و\s+نیم\s+ساعت/.test(source)) return 90;
+    if (/نیم\s+ساعت/.test(source)) return 30;
+    const hours = digits.match(/(\d+(?:\.\d+)?)\s*ساعت/);
+    if (hours) return Math.min(150, Math.max(20, Math.round(Number(hours[1]) * 60)));
+    if (/یک\s+ساعت|یه\s+ساعت/.test(source)) return 60;
+    const minutes = digits.match(/(\d{1,3})\s*دقیقه/);
+    return minutes ? Math.min(150, Math.max(20, Number(minutes[1]))) : 60;
+  }
+
+  function parseBrief(text) {
+    const clean = String(text || "").replace(/\u200c/g, " ");
+    const stroke = STROKES.find((name) => clean.includes(name)) || "کرال سینه";
     const level =
-      LEVELS.find((l) => clean.includes(l)) ||
+      LEVELS.find((name) => clean.includes(name)) ||
       (clean.includes("رقابت") ? "رقابتی" : clean.includes("مبتدی") ? "مبتدی" : "متوسط");
     const group =
-      AGE_GROUPS.find((g) => clean.includes(g)) ||
-      (clean.includes("نوجوان") ? "نوجوانان" : clean.includes("جوان") ? "جوانان" : "نوجوانان");
+      AGE_GROUPS.find((name) => clean.includes(name)) ||
+      (clean.includes("نوجوان") ? "نوجوانان" : clean.includes("جوان") ? "جوانان" : clean.includes("کودک") ? "کودکان" : "نوجوانان");
 
     let focus = "استقامت";
     if (/سرعت|اسپرینت|انفجار/.test(clean)) focus = "سرعت";
@@ -242,15 +339,14 @@ const AI = (() => {
     else if (/آستانه|لاکتات/.test(clean)) focus = "آستانه";
     else if (/استارت|دیواره|برگشت/.test(clean)) focus = "استارت";
 
-    const targetMatch = digits.match(/متراژ(?:\s*هدف)?\s*[:：]?\s*(\d{2,5})/);
     return {
-      minutes: minutesMatch ? Math.min(150, Number(minutesMatch[1])) : 60,
+      minutes: extractMinutes(clean),
       stroke,
       level,
       group,
       focus,
-      poolLength: /۵۰ متری|50 متری/.test(clean) ? 50 : 25,
-      targetMeters: targetMatch ? Number(targetMatch[1]) : 0,
+      poolLength: /۵۰\s*متری|50\s*متری/.test(clean) ? 50 : 25,
+      targetMeters: extractTargetMeters(clean),
       note: clean.trim(),
     };
   }
