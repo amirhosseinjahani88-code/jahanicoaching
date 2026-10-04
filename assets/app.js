@@ -1115,28 +1115,24 @@ APP.action("event:confirm", async (data) => {
     button.disabled = true;
     button.textContent = "در حال تطبیق…";
   }
-  const asked = (pending.questions || []).join(" ");
-  const chain = `${pending.text}\nسوال سیستم: ${asked}\nپاسخ مربی: ${answer}`;
-  const extracted = await readEventExtraction(student, answer, pending.facts, chain);
+  const extracted = await readEventExtraction(student, answer, pending.facts, pending.text);
   if (extracted.clarifyingQuestions.length) {
-    const novel = extracted.clarifyingQuestions.filter((question) => !(pending.questions || []).includes(question));
     APP.ui.eventPending = {
       ...pending,
       answer,
-      questions: novel.length ? novel : pending.questions,
+      questions: extracted.clarifyingQuestions,
       facts: extracted.facts,
-      analysis: extracted.aiFeedback,
     };
     paintEventExtras(student.id);
     if (button) {
       button.disabled = false;
       button.textContent = "تایید و اعمال نهایی";
     }
-    UI.toast(novel.length ? "هنوز یک مورد برای ثبت کم است." : "همین سؤال هنوز جواب مشخصی نگرفته است.");
+    UI.toast("هنوز یک مورد برای ثبت کم است.");
     return;
   }
   const applied = applyEventUpdates(student, extracted.proposedUpdates);
-  SJ.addStudentNote(student.id, { text: chain, analysis: extracted.aiFeedback || pending.analysis, showToParents: pending.showToParents });
+  SJ.addStudentNote(student.id, { text: pending.text, analysis: pending.analysis, showToParents: pending.showToParents });
   APP.ui.eventPending = null;
   const input = document.getElementById("event-note");
   if (input) input.value = "";

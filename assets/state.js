@@ -396,7 +396,7 @@ const SJ = (() => {
 
   function latestRecordTime(student, stroke, distance) {
     const log = (state.records && state.records[student.id]) || [];
-    const found = log.filter((row) => row.stroke === stroke && Number(row.distance) === Number(distance)).pop();
+    const found = log.filter((row) => row.stroke === stroke && Number(row.distance) === Number(distance) && Number.isFinite(Number(row.time))).pop();
     if (found) return Number(found.time);
     if (Number(distance) === 50 && stroke === mainStroke(student)) return Number(student.times[student.times.length - 1]);
     return null;

@@ -312,8 +312,8 @@ const CoachViews = (() => {
     if (!pending || Number(pending.studentId) !== Number(studentId)) return "";
     return `<div class="ai-box stack">
       <strong>پاسخ تکمیلی جهت ثبت دقیق داده‌ها</strong>
-      <ul>${pending.questions.map((question) => `<li>${UI.escapeHtml(question)}</li>`).join("")}</ul>
-      <textarea id="event-clarify-text" rows="3" placeholder="مثلاً کرال سینه، ۵۰ متر، جلسه امروز">${UI.escapeHtml(pending.answer || "")}</textarea>
+      <ol>${pending.questions.map((question) => `<li>${UI.escapeHtml(question)}</li>`).join("")}</ol>
+      <textarea id="event-clarify-text" rows="3" placeholder="همه جواب‌ها را در یک پیام بنویسید">${UI.escapeHtml(pending.answer || "")}</textarea>
       <button class="btn-primary btn-sm" type="button" id="event-confirm" data-action="event:confirm" data-id="${studentId}">تایید و اعمال نهایی</button>
     </div>`;
   }
@@ -329,12 +329,17 @@ const CoachViews = (() => {
           .split("\n")
           .map((line) => line.trim())
           .filter(Boolean);
+        const visibleText = String(item.text || "")
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => line && !/سوال سیستم|پاسخ مربی/.test(line))
+          .join("\n");
         return `<article class="note-item">
           <div class="space-between">
             <time class="muted">${UI.escapeHtml(item.date)}</time>
             ${forCoach && item.showToParents ? `<span class="badge badge-blue">قابل‌نمایش برای اولیا</span>` : ""}
           </div>
-          <p>${UI.escapeHtml(item.text)}</p>
+          <p>${UI.escapeHtml(visibleText)}</p>
           ${lines.length ? `<ol class="event-advice">${lines.map((line) => `<li>${UI.escapeHtml(line)}</li>`).join("")}</ol>` : ""}
         </article>`;
       })
