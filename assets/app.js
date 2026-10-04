@@ -207,6 +207,9 @@ const APP = (() => {
         render();
       } else if (node.id === "ai-brief") {
         ui.brief = node.value;
+      } else if (node.id === "fin-amount") {
+        const digits = toEnglishDigits(node.value).replace(/[^\d]/g, "");
+        node.value = digits ? UI.num(digits) : "";
       } else if (node.id === "demo-brief") {
         APP.demoBrief = node.value;
       }
@@ -966,6 +969,27 @@ APP.action("finance:remind", async (data) => {
   UI.toast(copied ? "پیام یادآوری در کلیپ‌بورد کپی شد." : "کپی پیام ممکن نشد.");
 });
 
+APP.action("finance:pay", () => {
+  const studentId = APP.value("fin-student");
+  const student = SJ.studentById(studentId);
+  const amount = APP.numberFrom(APP.value("fin-amount"));
+  const date = APP.value("fin-date").trim() || TODAY_KEY;
+  const method = APP.value("fin-method") || "کارت به کارت";
+  const note = APP.value("fin-note").trim();
+  if (!student) {
+    UI.toast("شاگرد را انتخاب کنید.");
+    return;
+  }
+  if (!amount) {
+    UI.toast("مبلغ پرداخت را وارد کنید.");
+    return;
+  }
+  SJ.addPayment({ studentId: student.id, amount, date, method, note, source: "manual" });
+  const due = SJ.studentBalance(student.id).due;
+  UI.toast(due > 0 ? `پرداخت ثبت شد. مانده ${UI.money(due)}` : "پرداخت ثبت شد و شهریه تسویه شد.");
+  APP.render();
+});
+
 APP.action("finance:export", (data) => {
   if (data.kind === "debtors") {
     const rows = SJ.students()
@@ -997,6 +1021,7 @@ APP.action("finance:export", (data) => {
         ولی: student ? student.parent : "",
         مبلغ: payment.amount,
         روش: payment.method,
+        توضیحات: payment.note || "",
         منبع: payment.source === "ocr" ? "OCR" : "دستی",
       };
     });

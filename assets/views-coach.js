@@ -1149,6 +1149,47 @@ const CoachViews = (() => {
         </div>
 
         <section class="card stack">
+          <h2 class="title-md">ثبت دستی پرداخت</h2>
+          <div class="grid">
+            <label class="field">
+              <span>شاگرد</span>
+              <select id="fin-student">
+                <option value="">انتخاب شاگرد</option>
+                ${SJ.students()
+                  .slice()
+                  .sort((a, b) => a.name.localeCompare(b.name, "fa"))
+                  .map((student) => {
+                    const due = SJ.studentBalance(student.id).due;
+                    return `<option value="${student.id}">${UI.escapeHtml(student.name)} — مانده ${UI.money(due)}</option>`;
+                  })
+                  .join("")}
+              </select>
+            </label>
+            <label class="field">
+              <span>مبلغ پرداختی (تومان)</span>
+              <input id="fin-amount" inputmode="numeric" placeholder="مثلاً ۱٬۵۰۰٬۰۰۰" />
+            </label>
+            <label class="field">
+              <span>تاریخ پرداخت</span>
+              <input id="fin-date" value="${UI.escapeHtml(TODAY_KEY)}" />
+            </label>
+            <label class="field">
+              <span>روش پرداخت</span>
+              <select id="fin-method">
+                <option>کارت به کارت</option>
+                <option>نقدی</option>
+                <option>سایر</option>
+              </select>
+            </label>
+          </div>
+          <label class="field">
+            <span>توضیحات یا شماره پیگیری (اختیاری)</span>
+            <input id="fin-note" placeholder="مثلاً شماره پیگیری" />
+          </label>
+          <button class="btn-primary" type="button" data-action="finance:pay">ثبت پرداخت</button>
+        </section>
+
+        <section class="card stack">
           <h2 class="title-md">دفتر پرداخت‌ها</h2>
           <div class="stack">
             ${SJ.payments()
@@ -1160,7 +1201,8 @@ const CoachViews = (() => {
                   <span>${UI.escapeHtml(p.date)}</span>
                   <span>${UI.escapeHtml(s ? s.name : "—")}</span>
                   <strong class="num">${UI.millions(p.amount)}</strong>
-                  <span class="badge ${p.source === "ocr" ? "badge-blue" : "badge-ok"}">${p.source === "ocr" ? "OCR" : p.method}</span>
+                  <span class="badge ${p.source === "ocr" ? "badge-blue" : "badge-ok"}">${p.source === "ocr" ? "OCR" : UI.escapeHtml(p.method)}</span>
+                  ${p.note ? `<span class="muted">${UI.escapeHtml(p.note)}</span>` : ""}
                 </div>`;
               })
               .join("")}

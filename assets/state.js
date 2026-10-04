@@ -520,14 +520,15 @@ const SJ = (() => {
     return state.payments.filter((p) => !studentId || p.studentId === Number(studentId));
   }
 
-  function addPayment({ studentId, amount, date, method, source, verified }) {
+  function addPayment({ studentId, amount, date, method, note, source, verified }) {
     const nextId = state.payments.reduce((max, p) => Math.max(max, p.id), 0) + 1;
     state.payments.push({
       id: nextId,
       studentId: Number(studentId),
       amount: Number(amount),
-      date,
+      date: date || TODAY_KEY,
       method: method || "کارت به کارت",
+      note: String(note || "").trim().slice(0, 120),
       source: source || "manual",
       verified: verified !== false,
     });
